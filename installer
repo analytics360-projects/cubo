@@ -1,0 +1,207 @@
+#!/bin/bash
+REPOSITORY_URL="811949862765.dkr.ecr.us-west-2.amazonaws.com"
+REGION="us-west-2"
+
+function fail() {
+  local message=$1
+  echo "ERROR: $message" >&2
+  exit 1
+}
+
+function generate_password() {
+    openssl rand -hex 32
+}
+
+function create_postgres_secret() {
+    kubectl create secret generic postgres-secret \
+        --namespace="postgres-db" \
+        --from-literal=postgresql-password="$(generate_password)" \
+        --from-literal=postgresql-postgres-password="$(generate_password)" \
+        --from-literal=postgresql-replication-password="$(generate_password)" \
+        --from-literal=postgresql-ldap-password="$(generate_password)"
+}
+
+function setup_db_postgres(){
+    local ns=$(kubectl get namespace postgres-db --no-headers --output=go-template={{.metadata.name}} 2>/dev/null)
+    local postgres_pass
+
+    if [ -z "${ns}" ]; then
+      kubectl create namespace postgres-db
+    fi
+
+    #kubectl -n postgres-db apply -f Infrastructure/pv.yaml
+    #kubectl -n postgres-db apply -f Infrastructure/pvc.yaml
+    create_postgres_secret
+    helm repo add bitnami https://charts.bitnami.com/bitnami
+    helm repo update
+
+    #type node port from Local Machine or VM
+    helm install \
+    --namespace="postgres-db" \
+    --set service.type=NodePort delta-db bitnami/postgresql \
+    --values infrastructure/postgres-values.yaml \
+    #--set volumePermissions.enabled=true
+    #--set postgresql.postgresqlUsername="postgres" \
+    #--set postgresql.postgresqlPassword="${postgres_pass}" \
+    #--set persistence.existingClaim=data-delta-db-postgresql-0
+
+    postgres_pass=$(kubectl -n postgres-db get secret delta-db-postgresql -o jsonpath="{.data.postgres-password}" | base64 --decode)
+    echo "postgres pass: $postgres_pass"
+}
+
+function deploy() {
+  chmod 600 .kube/config
+
+  local image_dir=$1
+  local name_project=$2
+  local NAMESPACE
+  local repo_name
+  local name_image
+  local image_tag
+  local release_name
+  local tag
+  image_dir=$(echo $image_dir | sed -e 's/\(.*\)/\L\1/')
+  image_tag="${image_dir/'.'/"-"}"
+
+  name_image="${image_dir}"
+  tag="latest"
+  release_name="$(echo "$image_tag" | tr '.' '-')"
+
+  if [ "$name_project" = "api" ]; then
+    NAMESPACE="delta-svc"
+    image_dir=$NAMESPACE
+  else
+    NAMESPACE=$2
+    release_name=$2
+  fi
+
+  if [ "$3" = "--debug" ]; then
+    echo "--------------------------------------------------------------"
+    echo "Debug $image_dir/$name_project"
+    echo "  >>>> Namespace:    $NAMESPACE"
+    echo "  >>>> Image_dir:    Infrastructure/$image_dir"
+    echo "  >>>> Repository:   $REPOSITORY_URL/${name_image}"
+    echo "  >>>> ReleaseName:  $release_name"
+    echo "  >>>> Tag:          $tag"
+    echo "--------------------------------------------------------------"
+
+    helm install --dry-run --debug -n "$NAMESPACE" \
+    --set service.name="$release_name" \
+    --set image.tag="$tag" "$release_name" Infrastructure/"$image_dir"
+  else
+    local ns=$(kubectl get namespace $NAMESPACE --no-headers --output=go-template={{.metadata.name}} 2>/dev/null)
+    echo "${ns}"
+
+    if [ -z "${ns}" ]; then
+        echo "--------------------------------------------------------------"
+        echo "Deploying $image_dir/$name_project"
+        echo "  >>>> Repository: $REPOSITORY_URL/${name_image}"
+        echo "  >>>> Release: $release_name"
+        echo "  >>>> Tag: $tag"
+        echo "--------------------------------------------------------------"
+
+        kubectl create namespace "$NAMESPACE"
+
+        if [ "$NAMESPACE" = "delta-svc" ]; then
+          kubectl -n "$NAMESPACE" apply -f Infrastructure/delta-configurations.yaml
+        fi
+
+        kubectl create secret docker-registry regcred \
+        --docker-server=$REPOSITORY_URL \
+        --docker-username=AWS \
+        --docker-password=$(aws ecr get-login-password --region us-west-2) \
+        --namespace="$NAMESPACE"
+
+        helm install -n "$NAMESPACE" \
+          --set image.repository="$REPOSITORY_URL/${name_image}" \
+          --set service.name="$release_name" \
+          --set image.tag="$tag" \
+          --set image.pullPolicy="Always" \
+          --set nameOverride="$release_name" \
+          "$release_name" Infrastructure/"$image_dir"
+    else
+        echo "--------------------------------------------------------------"
+        echo "Updating $image_dir/$NAMESPACE"
+        echo "  >>>> Repository: $REPOSITORY_URL/${name_image}"
+        echo "  >>>> Release: $release_name"
+        echo "  >>>> Tag: $tag"
+        echo "--------------------------------------------------------------"
+
+        kubectl delete secret regcred --namespace="$NAMESPACE"
+
+        kubectl create secret docker-registry regcred \
+        --docker-server=$REPOSITORY_URL \
+        --docker-username=AWS \
+        --docker-password=$(aws ecr get-login-password --region us-west-2) \
+        --namespace="$NAMESPACE"
+
+        helm upgrade -n "$NAMESPACE" \
+          --set service.name="$release_name" \
+          --set image.repository="$REPOSITORY_URL/${name_image}" \
+          --set image.tag="$tag" \
+          --set image.pullPolicy="Always" \
+          --set nameOverride="$release_name" \
+          --recreate-pods \
+          "$release_name" Infrastructure/"$image_dir"
+        return $?
+    fi
+  fi
+}
+
+function setup_monitoring() {
+  local ns=$(kubectl get namespace monitoring --no-headers --output=go-template={{.metadata.name}} 2>/dev/null)
+  if [ -z "${ns}" ]; then
+    kubectl create namespace monitoring
+  fi
+  helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+  helm repo add stable https://charts.helm.sh/stable
+  helm repo update
+  helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring --set prometheus.service.nodePort=39000 --set prometheus.service.type=NodePort
+}
+
+# Only for development
+export KUBECONFIG="$PWD/.kube/config"
+chmod 600 "$PWD/.kube/config"
+if ! ([[ -f "$KUBECONFIG" ]] || [[ -f "$HOME/.kube/config" ]]); then
+  echo "Configuration missing. Setting up local environment" >&2
+fi
+
+if [[ -z "$1" ]] ; then
+  fail "Use: $0 <deploy> [project_name]"
+fi
+
+case "$1" in
+  setup-db)
+      setup_db_postgres
+      ;;
+  install-monitoring)
+      setup_monitoring
+      ;;
+  generate-pass)
+      aws ecr get-login-password --region $REGION
+      ;;
+  deploy)
+    if [[ -z "$2" ]] ; then
+      fail "Please provide directory where project lives (e.g. 'delta')"
+    fi
+    if [ "$2" = "delta" ]; then
+      echo "Select the project of Delta to deploy"
+      echo " - api"
+      read -p "Enter the name of project of Delta to deploy: " value
+    elif [ "$2" = "spartan-app" ]; then
+      value=$2
+    else
+      fail "Select a project name"
+    fi
+
+    if [ "$3" = "--debug" ]; then
+     debug="--debug"
+    else
+      debug="no"
+    fi
+
+    deploy "$2" "$value" "$debug"
+    ;;
+  *)
+    fail "Use: $0 <deploy> [project_name]"
+esac
