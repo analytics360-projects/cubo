@@ -65,6 +65,21 @@ spec:
                 configMapKeyRef:
                   name: delta-configurations
                   key: aspnetcore_environment
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: aws_access_key_id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: aws_secret_access_key
+            - name: AWS_DEFAULT_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: aws_default_region
             - name: TZ
               valueFrom:
                 configMapKeyRef:

@@ -4,7 +4,7 @@
 
 image:
   repository: 811949862765.dkr.ecr.us-west-2.amazonaws.com/spartan
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
