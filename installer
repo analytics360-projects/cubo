@@ -161,14 +161,14 @@ function setup_monitoring() {
 
 function setup_microk8s() {
   snap install microk8s --classic
-  microk8s enable dashboard dns registry
+  microk8s enable dns
   curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
   install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
   microk8s config > .kube/config
+  chown -f -R seguritech .kube
 }
 
 function setup_previus() {
-  snap install microk8s --classic
   apt-get update -qq && \
   apt-get install -yq --no-install-recommends \
   vim sudo postgresql-client-11 less && \
