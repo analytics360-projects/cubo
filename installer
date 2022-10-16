@@ -159,13 +159,20 @@ function setup_monitoring() {
   helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring --set prometheus.service.nodePort=39000 --set prometheus.service.type=NodePort
 }
 
+function setup_microk8s() {
+  snap install microk8s --classic
+  microk8s enable dashboard dns registry
+  curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
+  install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+  microk8s config > .kube/config
+}
+
 function setup_previus() {
   snap install microk8s --classic
   apt-get update -qq && \
   apt-get install -yq --no-install-recommends \
   vim sudo postgresql-client-11 less && \
-  curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
-  install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl && \
+  
   curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" &&\
   unzip awscliv2.zip && \
   ./aws/install && \
@@ -189,6 +196,9 @@ if [[ -z "$1" ]] ; then
 fi
 
 case "$1" in
+  k8s)
+    setup_microk8s
+    ;;
   pres)
       setup_previus
       ;;
