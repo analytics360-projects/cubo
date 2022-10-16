@@ -168,11 +168,7 @@ function setup_microk8s() {
   chown -f -R seguritech .kube
 }
 
-function setup_previus() {
-  apt-get update -qq && \
-  apt-get install -yq --no-install-recommends \
-  vim sudo postgresql-client-11 less && \
-  
+function setup_previus() { 
   curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" &&\
   unzip awscliv2.zip && \
   ./aws/install && \
