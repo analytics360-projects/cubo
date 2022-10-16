@@ -159,6 +159,24 @@ function setup_monitoring() {
   helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring --set prometheus.service.nodePort=39000 --set prometheus.service.type=NodePort
 }
 
+function setup_previus() {
+  snap install microk8s --classic
+  apt-get update -qq && \
+  apt-get install -yq --no-install-recommends \
+  vim sudo postgresql-client-11 less && \
+  curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
+  install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl && \
+  curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" &&\
+  unzip awscliv2.zip && \
+  ./aws/install && \
+  curl -o aws-iam-authenticator https://amazon-eks.s3.us-west-2.amazonaws.com/1.19.6/2021-01-05/bin/linux/amd64/aws-iam-authenticator && \
+  install -o root -g root -m 0755 aws-iam-authenticator /usr/local/bin/aws-iam-authenticator && \
+  curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && \
+  chmod 700 get_helm.sh && \
+  ./get_helm.sh && \
+  helm repo add bitnami https://charts.bitnami.com/bitnami
+}
+
 # Only for development
 export KUBECONFIG="$PWD/.kube/config"
 chmod 600 "$PWD/.kube/config"
@@ -171,6 +189,9 @@ if [[ -z "$1" ]] ; then
 fi
 
 case "$1" in
+  pres)
+      setup_previus
+      ;;
   setup-db)
       setup_db_postgres
       ;;
