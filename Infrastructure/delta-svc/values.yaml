@@ -4,7 +4,7 @@
 
 image:
   repository: 811949862765.dkr.ecr.us-west-2.amazonaws.com/delta
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
