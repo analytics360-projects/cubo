@@ -64,7 +64,7 @@ function deploy() {
   image_tag="${image_dir/'.'/"-"}"
 
   name_image="${image_dir}"
-  tag="latest"
+  tag="v1.0.2"
   release_name="$(echo "$image_tag" | tr '.' '-')"
 
   if [ "$name_project" = "api" ]; then
