@@ -11,3 +11,7 @@ data:
   aws_access_key_id: 'AKIA32C73V5WYQMZ3RQI'
   aws_secret_access_key: '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'
   aws_default_region: 'us-west-1'
+  pbx_port: '8088'
+  pbx_username: 'asterisk'
+  pbx_password: 'asterisk'
+  pbx_ip: '10.19.5.138'

@@ -90,6 +90,26 @@ spec:
                 configMapKeyRef:
                   name: delta-configurations
                   key: nls_timestamp_format
+            - name: PBX_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: pbx_port
+            - name: PBX_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: pbx_username
+            - name: PBX_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: pbx_password
+            - name: PBX_IP
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: pbx_ip
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
