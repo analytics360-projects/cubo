@@ -15,3 +15,4 @@ data:
   pbx_username: 'asterisk'
   pbx_password: 'asterisk'
   pbx_ip: '10.19.5.138'
+  
