@@ -1,6 +1,6 @@
 #!/bin/bash
-REPOSITORY_URL="811949862765.dkr.ecr.us-west-2.amazonaws.com"
-REGION="us-west-2"
+REPOSITORY_URL="719659341483.dkr.ecr.us-east-1.amazonaws.com"
+REGION="us-east-1"
 
 function fail() {
   local message=$1

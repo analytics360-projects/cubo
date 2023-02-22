@@ -1,0 +1,83 @@
+#!/bin/bash
+REPOSITORY_URL="719659341483.dkr.ecr.us-east-1.amazonaws.com"
+REGION="us-east-1"
+
+function fail() {
+  local message=$1
+  echo "ERROR: $message" >&2
+  exit 1
+}
+
+function setup_previus() { 
+  apt install unzip
+  # Install k8s
+  snap install microk8s --classic
+  microk8s enable dns dashboard storage
+
+  # Install kubectl
+  curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+  curl -LO "https://dl.k8s.io/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl.sha256"
+  install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+  # Only for development
+  microk8s config > config
+  export KUBECONFIG="$PWD/config"
+  chmod 600 "$PWD/config"
+  
+  # Install previous requirements
+  curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" &&\
+  unzip awscliv2.zip && \
+  ./aws/install && \
+  curl -o aws-iam-authenticator https://amazon-eks.s3.us-west-2.amazonaws.com/1.19.6/2021-01-05/bin/linux/amd64/aws-iam-authenticator && \
+  install -o root -g root -m 0755 aws-iam-authenticator /usr/local/bin/aws-iam-authenticator && \
+  curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && \
+  chmod 700 get_helm.sh && \
+  ./get_helm.sh && \
+  helm repo add bitnami https://charts.bitnami.com/bitnami
+
+  # Deploy ArgoCD
+  kubectl create namespace argocd
+  kubectl create namespace delta
+  kubectl create namespace spartan
+
+  kubectl apply -n delta -f https://raw.githubusercontent.com/oriocuu/centinela/main/Infrastructure/delta-configurations.yaml
+
+  # dev
+  kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+  # Get the password (user: admin)
+  kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+}
+
+export KUBECONFIG="$PWD/config"
+chmod 600 "$PWD/config"
+if ! ([[ -f "$KUBECONFIG" ]] || [[ -f "$HOME/config" ]]); then
+  echo "Configuration missing. Setting up local environment" >&2
+fi
+
+if [[ -z "$1" ]] ; then
+  fail "Use: $0 <deploy> [project_name]"
+fi
+
+case "$1" in
+  pres)
+      setup_previus
+      ;;
+  generate-pass)
+      aws ecr get-login-password --region $REGION
+        kubectl delete secret regcred --namespace=delta
+        kubectl create secret docker-registry regcred \
+        --docker-server=$REPOSITORY_URL \
+        --docker-username=AWS \
+        --docker-password=$(aws ecr get-login-password --region $REGION) \
+        --namespace=delta
+
+        kubectl delete secret regcred --namespace=spartan
+        kubectl create secret docker-registry regcred \
+        --docker-server=$REPOSITORY_URL \
+        --docker-username=AWS \
+        --docker-password=$(aws ecr get-login-password --region $REGION) \
+        --namespace=spartan
+      ;;
+  *)
+    fail "Use: $0 <deploy> [project_name]"
+esac

@@ -8,9 +8,9 @@ data:
   nls_timestamp_format: 'YYYY-MM-DD HH:MI'
   lang: 'es_ES.utf8'
   aspnetcore_environment: "Production"
-  aws_access_key_id: 'AKIA32C73V5WYQMZ3RQI'
-  aws_secret_access_key: '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'
-  aws_default_region: 'us-west-1'
+  aws_access_key_id: 'AKIA2PDYKC2V36Z5J2HW'
+  aws_secret_access_key: '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'
+  aws_default_region: 'us-east-1'
   pbx_port: '8088'
   pbx_username: 'asterisk'
   pbx_password: 'asterisk'

@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 image:
-  repository: 811949862765.dkr.ecr.us-west-2.amazonaws.com/delta
+  repository: 719659341483.dkr.ecr.us-east-1.amazonaws.com/delta
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
