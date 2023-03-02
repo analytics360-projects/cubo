@@ -110,6 +110,31 @@ spec:
                 configMapKeyRef:
                   name: delta-configurations
                   key: pbx_ip
+            - name: MINIO_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: minio_endpoint
+            - name: MINIO_ACCESS_KEY_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: minio_access_key_id
+            - name: MINIO_SECRET_ACCESS_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: minio_secret_access_key
+            - name: BUCKET_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: bucket_name
+            - name: STORAGE_TYPE
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: storage_type
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
