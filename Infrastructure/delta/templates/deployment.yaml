@@ -1,0 +1,151 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "Delta.Api.fullname" . }}
+  labels:
+    {{- include "Delta.Api.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.autoscaling.enabled }}
+  scaleTargetRef:
+    kind: ReplicaSet
+    name: api
+  minReplicas: {{ .Values.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  targetCPUUtilizationPercentage: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}
+  {{- end }}
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "Delta.Api.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "Delta.Api.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "Delta.Api.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      hostname: hostname
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.service.port }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.service.port }}
+          env:
+            - name: POSTGRESCONNECTIONSTRING
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: postgresconnectionstring
+            - name: ASPNETCORE_ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: aspnetcore_environment
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: aws_access_key_id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: aws_secret_access_key
+            - name: AWS_DEFAULT_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: aws_default_region
+            - name: TZ
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: tz
+            - name: NLS_TIMESTAMP_FORMAT
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: nls_timestamp_format
+            - name: PBX_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: pbx_port
+            - name: PBX_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: pbx_username
+            - name: PBX_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: pbx_password
+            - name: PBX_IP
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: pbx_ip
+            - name: MINIO_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: minio_endpoint
+            - name: MINIO_ACCESS_KEY_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: minio_access_key_id
+            - name: MINIO_SECRET_ACCESS_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: minio_secret_access_key
+            - name: BUCKET_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: bucket_name
+            - name: STORAGE_TYPE
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: storage_type
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
