@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: skadi-configurations
+data:
+  postgresconnectionstring: 'Host=delta-db-postgresql.postgres-db.svc.cluster.local;Database=postgres;Username=postgres;Password=hA3kli1d2Z;Pooling=false;Timeout=300;CommandTimeout=300'
+  tz: 'America/Chihuahua'
+  nls_timestamp_format: 'YYYY-MM-DD HH:MI'
+  lang: 'es_ES.utf8'
+  aspnetcore_environment: "Production"

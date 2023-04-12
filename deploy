@@ -39,8 +39,10 @@ function setup_previus() {
   kubectl create namespace argocd
   kubectl create namespace delta
   kubectl create namespace spartan
+  kubectl create namespace skadi
 
   kubectl apply -n delta -f https://raw.githubusercontent.com/oriocuu/centinela/main/Infrastructure/delta-configurations.yaml
+  kubectl apply -n skadi -f https://raw.githubusercontent.com/oriocuu/centinela/main/Infrastructure/delta-configurations.yaml
 
   # dev
   kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
@@ -61,20 +63,26 @@ case "$1" in
       setup_previus
       ;;
   generate-pass)
-      aws ecr get-login-password --region $REGION
-        kubectl delete secret regcred --namespace=delta
-        kubectl create secret docker-registry regcred \
-        --docker-server=$REPOSITORY_URL \
-        --docker-username=AWS \
-        --docker-password=$(aws ecr get-login-password --region $REGION) \
-        --namespace=delta
+      kubectl delete secret regcred --namespace=delta
+      kubectl create secret docker-registry regcred \
+      --docker-server=$REPOSITORY_URL \
+      --docker-username=AWS \
+      --docker-password=$(aws ecr get-login-password --region $REGION) \
+      --namespace=delta
 
-        kubectl delete secret regcred --namespace=spartan
-        kubectl create secret docker-registry regcred \
-        --docker-server=$REPOSITORY_URL \
-        --docker-username=AWS \
-        --docker-password=$(aws ecr get-login-password --region $REGION) \
-        --namespace=spartan
+      kubectl delete secret regcred --namespace=spartan
+      kubectl create secret docker-registry regcred \
+      --docker-server=$REPOSITORY_URL \
+      --docker-username=AWS \
+      --docker-password=$(aws ecr get-login-password --region $REGION) \
+      --namespace=spartan
+
+      kubectl delete secret regcred --namespace=skadi
+      kubectl create secret docker-registry regcred \
+      --docker-server=$REPOSITORY_URL \
+      --docker-username=AWS \
+      --docker-password=$(aws ecr get-login-password --region $REGION) \
+      --namespace=skadi
       ;;
   *)
     fail "Use: $0 <deploy> [project_name]"
