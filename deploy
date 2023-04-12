@@ -42,7 +42,7 @@ function setup_previus() {
   kubectl create namespace skadi
 
   kubectl apply -n delta -f https://raw.githubusercontent.com/oriocuu/centinela/main/Infrastructure/delta-configurations.yaml
-  kubectl apply -n skadi -f https://raw.githubusercontent.com/oriocuu/centinela/main/Infrastructure/delta-configurations.yaml
+  kubectl apply -n skadi -f https://raw.githubusercontent.com/oriocuu/centinela/main/Infrastructure/skadi-configurations.yaml
 
   # dev
   kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
