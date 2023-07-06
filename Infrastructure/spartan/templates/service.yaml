@@ -11,5 +11,9 @@ spec:
       port: {{ .Values.service.port }}
       targetPort: {{ .Values.service.targetport }}
       nodePort: {{ .Values.service.nodeport }}
+    - protocol: TCP
+      port: {{ .Values.servicessl.port }}
+      targetPort: {{ .Values.servicessl.targetport }}
+      nodePort: {{ .Values.servicessl.nodeport }}
   selector:
     {{- include "spartan-project.selectorLabels" . | nindent 4 }}

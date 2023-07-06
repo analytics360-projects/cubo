@@ -43,6 +43,13 @@ service:
   nodeport: 32000
   name: ""
 
+servicessl:
+  type: NodePort
+  port: 443
+  targetport: 443
+  nodeport: 32100
+  name: ""
+
 ingress:
   enabled: false
   className: ""
