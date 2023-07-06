@@ -8,7 +8,7 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
-imagePullSecrets: 
+imagePullSecrets:
   - name: regcred
 
 nameOverride: ""
@@ -41,7 +41,14 @@ service:
   port: 5001
   targetport: 5001
   nodeport: 32001
-  name: ""
+  name: "http"
+
+servicessl:
+  type: NodePort
+  port: 5002
+  targetport: 5002
+  nodeport: 32102
+  name: "https"
 
 ingress:
   enabled: false
