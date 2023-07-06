@@ -41,14 +41,14 @@ service:
   port: 80
   targetport: 80
   nodeport: 32000
-  name: ""
+  name: "http"
 
 servicessl:
   type: NodePort
   port: 443
   targetport: 443
   nodeport: 32100
-  name: ""
+  name: "https"
 
 ingress:
   enabled: false
