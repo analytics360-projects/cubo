@@ -36,12 +36,19 @@ securityContext: {}
   # runAsNonRoot: true
   # runAsUser: 1000
 
-service:
+#service:
+#  type: NodePort
+#  port: 80
+#  targetport: 80
+#  nodeport: 32000
+#  name: "http"
+#
+servicessl:
   type: NodePort
-  port: 80
-  targetport: 80
+  port: 443
+  targetport: 443
   nodeport: 32000
-  name: ""
+  name: "https"
 
 ingress:
   enabled: false
