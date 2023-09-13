@@ -90,6 +90,11 @@ spec:
                 configMapKeyRef:
                   name: delta-configurations
                   key: nls_timestamp_format
+            - name: PBXCONNECTIONSTRING
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: pbxconnectionstring
             - name: PBX_PORT
               valueFrom:
                 configMapKeyRef:
