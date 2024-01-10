@@ -46,14 +46,6 @@ spec:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: {{ .Values.service.port }}
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: {{ .Values.service.port }}
           env:
             - name: POSTGRESCONNECTIONSTRING
               valueFrom:

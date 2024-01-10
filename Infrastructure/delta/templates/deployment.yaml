@@ -115,6 +115,11 @@ spec:
                 configMapKeyRef:
                   name: delta-configurations
                   key: pbx_ip
+            - name: PBXCONNECTIONSTRING
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: pbxconnectionstring
             - name: MINIO_ENDPOINT
               valueFrom:
                 configMapKeyRef:
