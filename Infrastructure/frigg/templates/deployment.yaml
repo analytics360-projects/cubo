@@ -55,26 +55,46 @@ spec:
               path: /health
               port: {{ .Values.service.port }}
           env:
-            - name: POSTGRESCONNECTIONSTRING
+            - name: DATABASE_DATABASE
               valueFrom:
                 configMapKeyRef:
-                  name: skadi-configurations
-                  key: postgresconnectionstring
-            - name: ASPNETCORE_ENVIRONMENT
+                  name: frigg-configurations
+                  key: database_database
+            - name: DATABASE_HOSTNAME
               valueFrom:
                 configMapKeyRef:
-                  name: skadi-configurations
-                  key: aspnetcore_environment
-            - name: TZ
+                  name: frigg-configurations
+                  key: database_hostname
+            - name: DATABASE_USERNAME
               valueFrom:
                 configMapKeyRef:
-                  name: skadi-configurations
-                  key: tz
-            - name: NLS_TIMESTAMP_FORMAT
+                  name: frigg-configurations
+                  key: database_username
+            - name: DATABASE_PASSWORD
               valueFrom:
                 configMapKeyRef:
-                  name: skadi-configurations
-                  key: nls_timestamp_format
+                  name: frigg-configurations
+                  key: database_password
+            - name: SMTP_SERVER
+              valueFrom:
+                configMapKeyRef:
+                  name: frigg-configurations
+                  key: smtp_server
+            - name: SMTP_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: frigg-configurations
+                  key: smtp_port
+            - name: SMTP_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: frigg-configurations
+                  key: smtp_user
+            - name: SMTP_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: frigg-configurations
+                  key: smtp_password
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
