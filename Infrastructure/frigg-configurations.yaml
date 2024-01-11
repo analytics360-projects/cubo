@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: delta-configurations
+  name: frigg-configurations
 data:
   database_database: "database"
   database_hostname: "hostname"
