@@ -8,7 +8,16 @@ function fail() {
   exit 1
 }
 
-function setup_previus() { 
+function generate_password() {
+    openssl rand -hex 32
+}
+
+function create_redis_secret() {
+  kubectl -n delta create secret generic redis-secret \
+      --from-literal=redis-password="$(generate_password)"
+}
+
+function setup_previus() {
   apt install unzip
   # Install k8s
   snap install microk8s --classic
@@ -23,7 +32,7 @@ function setup_previus() {
   microk8s config > config
   export KUBECONFIG="$PWD/config"
   chmod 600 "$PWD/config"
-  
+
   # Install previous requirements
   curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" &&\
   unzip awscliv2.zip && \
@@ -34,12 +43,19 @@ function setup_previus() {
   chmod 700 get_helm.sh && \
   ./get_helm.sh && \
   helm repo add bitnami https://charts.bitnami.com/bitnami
+  helm repo add hashicorp https://helm.releases.hashicorp.com
 
-  # Deploy ArgoCD
   kubectl create namespace argocd
   kubectl create namespace delta
   kubectl create namespace spartan
   kubectl create namespace skadi
+  kubectl create namespace vault
+
+  create_rails_secret
+
+  helm install vault hashicorp/vault --namespace vault --version 0.24.0
+  helm install vault hashicorp/vault --namespace vault --set "server.dev.enabled=true" --set "server.dev.devRootToken=root" --dry-run
+  helm install redis bitnami/redis   --namespace delta --set "auth.existingSecret=redis-secret" --set "auth.existingSecretPasswordKey=redis-password"
 
   kubectl apply -n delta -f https://raw.githubusercontent.com/oriocuu/centinela/main/Infrastructure/delta-configurations.yaml
   kubectl apply -n skadi -f https://raw.githubusercontent.com/oriocuu/centinela/main/Infrastructure/skadi-configurations.yaml

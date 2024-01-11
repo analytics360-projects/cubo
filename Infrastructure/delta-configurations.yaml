@@ -9,8 +9,8 @@ data:
   nls_timestamp_format: 'YYYY-MM-DD HH:MI'
   lang: 'es_ES.utf8'
   aspnetcore_environment: "Production"
-  aws_access_key_id: 'AKIA2PDYKC2V36Z5J2HW'
-  aws_secret_access_key: '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'
+  aws_access_key_id: ''
+  aws_secret_access_key: ''
   aws_default_region: 'us-east-1'
   pbx_port: '8088'
   pbx_username: 'asterisk'
@@ -20,4 +20,4 @@ data:
   minio_access_key_id: '4IJOrYKAmRZbI0oy'
   minio_secret_access_key: 'mprLOeQlEeVBXKYuRtSUIeQmtOMBs6bH'
   bucket_name: 'orion-dev'
-  storage_type: 'MINIO'  
+  storage_type: 'MINIO'
