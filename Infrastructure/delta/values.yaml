@@ -68,20 +68,19 @@ ingress:
 
 resources:
   limits:
-    cpu: 1000m
-    memory: 1G
+    cpu: 100m
+    memory: 100Mi
   requests:
-    cpu: 1000m
-    memory: 1G
+    cpu: 100m
+    memory: 100Mi
 
 # replicaCount: 2
 
 autoscaling:
   enabled: true
-  name: delta-api
   minReplicas: 2
-  maxReplicas: 100
-  # targetCPUUtilizationPercentage: 50
+  maxReplicas: 64
+  targetCPUUtilizationPercentage: 50
   # targetMemoryUtilizationPercentage: 80
 
 nodeSelector: {}
