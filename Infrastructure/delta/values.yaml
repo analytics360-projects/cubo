@@ -74,14 +74,14 @@ resources:
     cpu: 1000m
     memory: 1Gi
 
-replicaCount: 2
+#replicaCount: 2
 
-# autoscaling:
-#   enabled: true
-#   minReplicas: 2
-#   maxReplicas: 64
-#   targetCPUUtilizationPercentage: 50
-#   targetMemoryUtilizationPercentage: 80
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 64
+  targetCPUUtilizationPercentage: 50
+  targetMemoryUtilizationPercentage: 80
 
 nodeSelector: {}
 
