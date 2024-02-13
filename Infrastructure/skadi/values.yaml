@@ -8,7 +8,7 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
-imagePullSecrets: 
+imagePullSecrets:
   - name: regcred
 
 nameOverride: ""
@@ -38,7 +38,7 @@ securityContext: {}
 
 service:
   type: ClusterIp
-  port: 5001
+  port: 5010
 
 ingress:
   enabled: false
