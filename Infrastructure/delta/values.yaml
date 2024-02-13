@@ -77,10 +77,10 @@ resources:
 replicaCount: 2
 
 autoscaling:
-  # enabled: true
-  # name: delta-api
-  # minReplicas: 2
-  # maxReplicas: 100
+  enabled: true
+  name: delta-api
+  minReplicas: 2
+  maxReplicas: 100
   # targetCPUUtilizationPercentage: 50
   # targetMemoryUtilizationPercentage: 80
 
