@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 image:
-  repository: 009158394470.dkr.ecr.us-east-1.amazonaws.com/skadi
+  repository: 009158394470.dkr.ecr.us-east-1.amazonaws.com/frigg
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
@@ -37,8 +37,11 @@ securityContext: {}
   # runAsUser: 1000
 
 service:
-  type: ClusterIp
-  port: 5010
+  type: NodePort
+  port: 3000
+  targetport: 3000
+  nodeport: 32005
+  name: "http"
 
 ingress:
   enabled: false

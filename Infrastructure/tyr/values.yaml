@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 image:
-  repository: 009158394470.dkr.ecr.us-east-1.amazonaws.com/skadi
+  repository: 009158394470.dkr.ecr.us-east-1.amazonaws.com/tyr
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
@@ -38,7 +38,7 @@ securityContext: {}
 
 service:
   type: ClusterIp
-  port: 5010
+  port: 5001
 
 ingress:
   enabled: false
@@ -71,11 +71,11 @@ resources: {}
 replicaCount: 1
 
 autoscaling:
-  enabled: false
-  minReplicas: 10
+  enabled: true
+  minReplicas: 2
   maxReplicas: 100
   targetCPUUtilizationPercentage: 50
-  # targetMemoryUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
 
 nodeSelector: {}
 

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frigg-configurations
+data:
+  database_database: "database"
+  database_hostname: "hostname"
+  database_username: "username"
+  database_password: "password"
+  smtp_server: "smtp.mail.com"
+  smtp_port: "587"
+  smtp_user: ""
+  smtp_password: "pass"
