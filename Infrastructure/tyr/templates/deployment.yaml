@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "Skadi.fullname" . }}
+  name: {{ include "tyr.fullname" . }}
   labels:
-    {{- include "Skadi.labels" . | nindent 4 }}
+    {{- include "tyr.labels" . | nindent 4 }}
 spec:
   {{- if .Values.autoscaling.enabled }}
   scaleTargetRef:
@@ -18,7 +18,7 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-      {{- include "Skadi.selectorLabels" . | nindent 6 }}
+      {{- include "tyr.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -26,13 +26,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "Skadi.selectorLabels" . | nindent 8 }}
+        {{- include "tyr.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "Skadi.serviceAccountName" . }}
+      serviceAccountName: {{ include "tyr.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       hostname: hostname
@@ -58,22 +58,22 @@ spec:
             - name: POSTGRESCONNECTIONSTRING
               valueFrom:
                 configMapKeyRef:
-                  name: skadi-configurations
+                  name: tyr-configurations
                   key: postgresconnectionstring
             - name: ASPNETCORE_ENVIRONMENT
               valueFrom:
                 configMapKeyRef:
-                  name: skadi-configurations
+                  name: tyr-configurations
                   key: aspnetcore_environment
             - name: TZ
               valueFrom:
                 configMapKeyRef:
-                  name: skadi-configurations
+                  name: tyr-configurations
                   key: tz
             - name: NLS_TIMESTAMP_FORMAT
               valueFrom:
                 configMapKeyRef:
-                  name: skadi-configurations
+                  name: tyr-configurations
                   key: nls_timestamp_format
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
