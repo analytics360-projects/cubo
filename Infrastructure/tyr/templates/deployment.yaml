@@ -54,27 +54,6 @@ spec:
             httpGet:
               path: /health
               port: {{ .Values.service.port }}
-          env:
-            - name: POSTGRESCONNECTIONSTRING
-              valueFrom:
-                configMapKeyRef:
-                  name: tyr-configurations
-                  key: postgresconnectionstring
-            - name: ASPNETCORE_ENVIRONMENT
-              valueFrom:
-                configMapKeyRef:
-                  name: tyr-configurations
-                  key: aspnetcore_environment
-            - name: TZ
-              valueFrom:
-                configMapKeyRef:
-                  name: tyr-configurations
-                  key: tz
-            - name: NLS_TIMESTAMP_FORMAT
-              valueFrom:
-                configMapKeyRef:
-                  name: tyr-configurations
-                  key: nls_timestamp_format
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
