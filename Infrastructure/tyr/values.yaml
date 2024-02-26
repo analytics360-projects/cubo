@@ -1,4 +1,4 @@
-# Default values for Skadi.
+# Default values for spartan-project.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
@@ -37,8 +37,18 @@ securityContext: {}
   # runAsUser: 1000
 
 service:
-  type: ClusterIp
-  port: 5001
+  type: NodePort
+  port: 80
+  targetport: 80
+  nodeport: 32000
+  name: "http"
+
+servicessl:
+  type: NodePort
+  port: 443
+  targetport: 443
+  nodeport: 32100
+  name: "https"
 
 ingress:
   enabled: false
@@ -71,11 +81,11 @@ resources: {}
 replicaCount: 1
 
 autoscaling:
-  enabled: true
-  minReplicas: 2
+  enabled: false
+  minReplicas: 1
   maxReplicas: 100
   targetCPUUtilizationPercentage: 50
-  targetMemoryUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
 
 nodeSelector: {}
 
