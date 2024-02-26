@@ -50,14 +50,18 @@ spec:
             httpGet:
               path: /health
               port: {{ .Values.service.port }}
-              initialDelaySeconds: 30
-              periodSeconds: 60
+              timeoutSeconds: 60
+              periodSeconds: 25
+              successThreshold: 1
+              failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /health
               port: {{ .Values.service.port }}
-              initialDelaySeconds: 30
-              periodSeconds: 60
+              timeoutSeconds: 60
+              periodSeconds: 25
+              successThreshold: 1
+              failureThreshold: 3
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
