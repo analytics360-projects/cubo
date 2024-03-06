@@ -72,7 +72,7 @@ function setup_previus() {
 }
 
 export KUBECONFIG="$PWD/config"
-chmod 600 "$PWD/config"
+#chmod 600 "$PWD/config"
 if ! ([[ -f "$KUBECONFIG" ]] || [[ -f "$HOME/config" ]]); then
   echo "Configuration missing. Setting up local environment" >&2
 fi
