@@ -27,7 +27,7 @@ function setup_previus() {
   # Install k8s
   snap install microk8s --classic
   microk8s enable community
-  microk8s enable dns dashboard storage keda metrics-server
+  microk8s enable dns dashboard storage metrics-server
 
   # Install kubectl
   curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
