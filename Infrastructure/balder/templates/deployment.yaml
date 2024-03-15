@@ -50,10 +50,19 @@ spec:
             httpGet:
               path: /health
               port: {{ .Values.service.port }}
+            initialDelaySeconds: 300
+            timeoutSeconds: 10
+            periodSeconds: 60
+            successThreshold: 1
+            failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /health
               port: {{ .Values.service.port }}
+            timeoutSeconds: 10
+            periodSeconds: 60
+            successThreshold: 1
+            failureThreshold: 3
           env:
             - name: POSTGRESCONNECTIONSTRING
               valueFrom:
