@@ -27,7 +27,7 @@ function setup_previus() {
   # Install k8s
   snap install microk8s --classic
   microk8s enable community
-  microk8s enable dns dashboard storage keda metrics-server
+  microk8s enable dns dashboard storage metrics-server
 
   # Install kubectl
   curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
@@ -58,7 +58,7 @@ function setup_previus() {
   kubectl create namespace vault
   kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 
-  create_rails_secret
+  create_redis_secret
 
   helm install vault hashicorp/vault --namespace vault --version 0.24.0
   helm install vault hashicorp/vault --namespace vault --set "server.dev.enabled=true" --set "server.dev.devRootToken=root" --dry-run
