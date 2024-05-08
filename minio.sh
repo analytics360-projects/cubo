@@ -16,3 +16,11 @@ mkdir -p /home/$(hostname)/.minio/certs
 mv private.key public.crt /home/$(hostname)/.minio/certs
 chown minio-user:minio-user /home/$(hostname)/.minio/certs/private.key
 chown minio-user:minio-user /home/$(hostname)/.minio/certs/public.crt
+cat > /etc/default/minio <<-EOF
+MINIO_VOLUMES="/mnt/data"
+MINIO_OPTS="--certs-dir /home/sammy/.minio/certs --console-address :9001"
+MINIO_ROOT_USER=minioadmin
+MINIO_ROOT_PASSWORD=minioadmin
+EOF
+systemctl start minio
+systemctl status minio
