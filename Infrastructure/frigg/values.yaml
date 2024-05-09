@@ -75,7 +75,7 @@ replicaCount: 1
 
 autoscaling:
   enabled: false
-  minReplicas: 10
+  minReplicas: 1
   maxReplicas: 100
   targetCPUUtilizationPercentage: 50
   # targetMemoryUtilizationPercentage: 80
