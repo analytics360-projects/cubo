@@ -40,7 +40,7 @@ service:
   type: NodePort
   port: 3000
   targetport: 3000
-  nodeport: 32006
+  nodeport: 32007
   name: "http"
 
 ingress:
