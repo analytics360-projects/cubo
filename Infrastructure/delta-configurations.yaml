@@ -21,3 +21,4 @@ data:
   minio_secret_access_key: 'mprLOeQlEeVBXKYuRtSUIeQmtOMBs6bH'
   bucket_name: 'orion-dev'
   storage_type: 'MINIO'
+  redisconnectionstring: '10.19.5.100:6379,password=30083008'
