@@ -146,6 +146,11 @@ spec:
                 configMapKeyRef:
                   name: delta-configurations
                   key: storage_type
+            - name: REDISCONNECTIONSTRING
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: redisconnectionstring
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
