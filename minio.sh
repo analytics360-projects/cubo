@@ -1,7 +1,7 @@
 #!/bin/bash
 
 apt update
-apt upgrade
+apt upgrade -y
 wget https://dl.min.io/server/minio/release/linux-amd64/archive/minio_20240113075303.0.0_amd64.deb
 dpkg -i minio_20240113075303.0.0_amd64.deb
 groupadd -r minio-user
