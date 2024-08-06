@@ -1,0 +1,56 @@
+#!/bin/bash
+
+# Commmand example debug helm chart
+# helm template -f values.yaml delta
+
+
+REPOSITORY_URL="009158394470.dkr.ecr.us-east-1.amazonaws.com"
+REGION="us-east-1"
+
+function fail() {
+  local message=$1
+  echo "ERROR: $message" >&2
+  exit 1
+}
+
+function generate_password() {
+    openssl rand -hex 32
+}
+
+function create_redis_secret() {
+  kubectl -n delta create secret generic redis-secret \
+      --from-literal=redis-password="$(generate_password)"
+}
+
+function setup_previus() {
+  helm repo add bitnami https://charts.bitnami.com/bitnami
+  helm repo add hashicorp https://helm.releases.hashicorp.com
+
+  kubectl create namespace skadi
+  kubectl create namespace vault
+
+  create_redis_secret
+
+  helm install vault hashicorp/vault --namespace vault --version 0.24.0
+  helm install vault hashicorp/vault --namespace vault --set "server.dev.enabled=true" --set "server.dev.devRootToken=root" --dry-run
+  helm install redis bitnami/redis   --namespace delta --set "auth.existingSecret=redis-secret" --set "auth.existingSecretPasswordKey=redis-password"
+
+}
+
+export KUBECONFIG="$PWD/config"
+#chmod 600 "$PWD/config"
+if ! ([[ -f "$KUBECONFIG" ]] || [[ -f "$HOME/config" ]]); then
+  echo "Configuration missing. Setting up local environment" >&2
+fi
+
+if [[ -z "$1" ]] ; then
+  fail "Use: $0 <deploy> [project_name]"
+fi
+
+case "$1" in
+  pres)
+      setup_previus
+      ;;
+  *)
+    fail "Use: $0 <deploy> [project_name]"
+esac
