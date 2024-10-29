@@ -2,14 +2,14 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ include "spartan-project.fullname" . }}
+  name: {{ include "forseti-project.fullname" . }}
   labels:
-    {{- include "spartan-project.labels" . | nindent 4 }}
+    {{- include "forseti-project.labels" . | nindent 4 }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ include "spartan-project.fullname" . }}
+    name: {{ include "forseti-project.fullname" . }}
   minReplicas: {{ .Values.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.autoscaling.maxReplicas }}
   metrics:

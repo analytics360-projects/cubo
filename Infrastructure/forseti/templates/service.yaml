@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "spartan-project.fullname" . }}
+  name: {{ include "forseti-project.fullname" . }}
   labels:
-    {{- include "spartan-project.labels" . | nindent 4 }}
+    {{- include "forseti-project.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -18,4 +18,4 @@ spec:
       targetPort: {{ .Values.servicessl.targetport }}
       nodePort: {{ .Values.servicessl.nodeport }}
   selector:
-    {{- include "spartan-project.selectorLabels" . | nindent 4 }}
+    {{- include "forseti-project.selectorLabels" . | nindent 4 }}
