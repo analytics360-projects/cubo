@@ -2,14 +2,14 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ include "Skadi.fullname" . }}
+  name: {{ include "Njoror.fullname" . }}
   labels:
-    {{- include "Skadi.labels" . | nindent 4 }}
+    {{- include "Njoror.labels" . | nindent 4 }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ include "Skadi.fullname" . }}
+    name: {{ include "Njoror.fullname" . }}
   minReplicas: {{ .Values.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.autoscaling.maxReplicas }}
   metrics:
