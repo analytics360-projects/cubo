@@ -5,14 +5,6 @@ metadata:
   labels:
     {{- include "balder.labels" . | nindent 4 }}
 spec:
-  {{- if .Values.autoscaling.enabled }}
-  scaleTargetRef:
-    kind: ReplicaSet
-    name: api
-  minReplicas: {{ .Values.autoscaling.minReplicas }}
-  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
-  targetCPUUtilizationPercentage: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}
-  {{- end }}
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
