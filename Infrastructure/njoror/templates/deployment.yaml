@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "balder.fullname" . }}
+  name: {{ include "Njoror.fullname" . }}
   labels:
-    {{- include "balder.labels" . | nindent 4 }}
+    {{- include "Njoror.labels" . | nindent 4 }}
 spec:
   {{- if .Values.autoscaling.enabled }}
   scaleTargetRef:
@@ -18,7 +18,7 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-      {{- include "balder.selectorLabels" . | nindent 6 }}
+      {{- include "Njoror.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -26,13 +26,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "balder.selectorLabels" . | nindent 8 }}
+        {{- include "Njoror.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "balder.serviceAccountName" . }}
+      serviceAccountName: {{ include "Njoror.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       hostname: hostname
@@ -50,50 +50,51 @@ spec:
             httpGet:
               path: /health
               port: {{ .Values.service.port }}
-            initialDelaySeconds: 300
-            timeoutSeconds: 10
-            periodSeconds: 60
-            successThreshold: 1
-            failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /health
               port: {{ .Values.service.port }}
-            timeoutSeconds: 10
-            periodSeconds: 60
-            successThreshold: 1
-            failureThreshold: 3
           env:
-            - name: POSTGRESCONNECTIONSTRING
+            - name: DATABASE_DATABASE
               valueFrom:
                 configMapKeyRef:
-                  name: balder-configurations
-                  key: postgresconnectionstring
-            - name: ASPNETCORE_ENVIRONMENT
+                  name: njoror-configurations
+                  key: database_database
+            - name: DATABASE_HOSTNAME
               valueFrom:
                 configMapKeyRef:
-                  name: balder-configurations
-                  key: aspnetcore_environment
-            - name: TZ
+                  name: njoror-configurations
+                  key: database_hostname
+            - name: DATABASE_USERNAME
               valueFrom:
                 configMapKeyRef:
-                  name: balder-configurations
-                  key: tz
-            - name: NLS_TIMESTAMP_FORMAT
+                  name: njoror-configurations
+                  key: database_username
+            - name: DATABASE_PASSWORD
               valueFrom:
                 configMapKeyRef:
-                  name: balder-configurations
-                  key: nls_timestamp_format
-            - name: REKOGNITION_SERVICE_URL
+                  name: njoror-configurations
+                  key: database_password
+            - name: SMTP_SERVER
               valueFrom:
                 configMapKeyRef:
-                  name: balder-configurations
-                  key: rekognition_service_url
-            - name: SANS_URL
+                  name: njoror-configurations
+                  key: smtp_server
+            - name: SMTP_PORT
               valueFrom:
                 configMapKeyRef:
-                  name: balder-configurations
-                  key: sans_url
+                  name: njoror-configurations
+                  key: smtp_port
+            - name: SMTP_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: njoror-configurations
+                  key: smtp_user
+            - name: SMTP_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: njoror-configurations
+                  key: smtp_password
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

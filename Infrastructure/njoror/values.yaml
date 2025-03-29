@@ -1,9 +1,9 @@
-# Default values for Frigg.
+# Default values for Njoror.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
 image:
-  repository: 009158394470.dkr.ecr.us-east-1.amazonaws.com/frigg
+  repository: 009158394470.dkr.ecr.us-east-1.amazonaws.com/njoror
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
@@ -40,7 +40,7 @@ service:
   type: NodePort
   port: 3000
   targetport: 3000
-  nodeport: 32006
+  nodeport: 32007
   name: "http"
 
 ingress:
@@ -75,8 +75,8 @@ replicaCount: 1
 
 autoscaling:
   enabled: false
-  minReplicas: 3
-  maxReplicas: 64
+  minReplicas: 1
+  maxReplicas: 100
   targetCPUUtilizationPercentage: 50
   # targetMemoryUtilizationPercentage: 80
 

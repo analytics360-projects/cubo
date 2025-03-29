@@ -1,9 +1,9 @@
-# Default values for Frigg.
+# Default values for forseti-project.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
 image:
-  repository: 009158394470.dkr.ecr.us-east-1.amazonaws.com/frigg
+  repository: 009158394470.dkr.ecr.us-east-1.amazonaws.com/forseti
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
@@ -38,10 +38,17 @@ securityContext: {}
 
 service:
   type: NodePort
-  port: 3000
-  targetport: 3000
-  nodeport: 32006
+  port: 80
+  targetport: 80
+  nodeport: 32000
   name: "http"
+
+servicessl:
+  type: NodePort
+  port: 443
+  targetport: 443
+  nodeport: 32100
+  name: "https"
 
 ingress:
   enabled: false
@@ -75,7 +82,7 @@ replicaCount: 1
 
 autoscaling:
   enabled: false
-  minReplicas: 3
+  minReplicas: 1
   maxReplicas: 64
   targetCPUUtilizationPercentage: 50
   # targetMemoryUtilizationPercentage: 80
