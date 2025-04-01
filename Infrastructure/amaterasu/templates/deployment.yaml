@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "Amaterasu-project.fullname" . }}
+  name: {{ include "amaterasu-project.fullname" . }}
   labels:
-    {{- include "Amaterasu-project.labels" . | nindent 4 }}
+    {{- include "amaterasu-project.labels" . | nindent 4 }}
 spec:
   {{- if .Values.autoscaling.enabled }}
   scaleTargetRef:
@@ -18,7 +18,7 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-      {{- include "Amaterasu-project.selectorLabels" . | nindent 6 }}
+      {{- include "amaterasu-project.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -26,13 +26,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "Amaterasu-project.selectorLabels" . | nindent 8 }}
+        {{- include "amaterasu-project.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "Amaterasu-project.serviceAccountName" . }}
+      serviceAccountName: {{ include "amaterasu-project.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       hostname: hostname

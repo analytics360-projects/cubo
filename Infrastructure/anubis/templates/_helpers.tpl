@@ -1,7 +1,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "Anubis.Api.name" -}}
+{{- define "anubis.Api.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -10,7 +10,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "Anubis.Api.fullname" -}}
+{{- define "anubis.Api.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -26,16 +26,16 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "Anubis.Api.chart" -}}
+{{- define "anubis.Api.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "Anubis.Api.labels" -}}
-helm.sh/chart: {{ include "Anubis.Api.chart" . }}
-{{ include "Anubis.Api.selectorLabels" . }}
+{{- define "anubis.Api.labels" -}}
+helm.sh/chart: {{ include "anubis.Api.chart" . }}
+{{ include "anubis.Api.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -45,17 +45,17 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "Anubis.Api.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "Anubis.Api.name" . }}
+{{- define "anubis.Api.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "anubis.Api.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "Anubis.Api.serviceAccountName" -}}
+{{- define "anubis.Api.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "Anubis.Api.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "anubis.Api.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}

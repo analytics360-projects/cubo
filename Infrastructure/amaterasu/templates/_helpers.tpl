@@ -1,7 +1,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "Amaterasu-project.name" -}}
+{{- define "amaterasu-project.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -10,7 +10,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "Amaterasu-project.fullname" -}}
+{{- define "amaterasu-project.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -26,16 +26,16 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "Amaterasu-project.chart" -}}
+{{- define "amaterasu-project.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "Amaterasu-project.labels" -}}
-helm.sh/chart: {{ include "Amaterasu-project.chart" . }}
-{{ include "Amaterasu-project.selectorLabels" . }}
+{{- define "amaterasu-project.labels" -}}
+helm.sh/chart: {{ include "amaterasu-project.chart" . }}
+{{ include "amaterasu-project.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -45,17 +45,17 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "Amaterasu-project.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "Amaterasu-project.name" . }}
+{{- define "amaterasu-project.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "amaterasu-project.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "Amaterasu-project.serviceAccountName" -}}
+{{- define "amaterasu-project.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "Amaterasu-project.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "amaterasu-project.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
