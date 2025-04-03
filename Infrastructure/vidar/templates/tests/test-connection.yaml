@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "vidar.Api.fullname" . }}-test-connection"
+  labels:
+    {{- include "vidar.Api.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['{{ include "vidar.Api.fullname" . }}:{{ .Values.service.port }}']
+  restartPolicy: Never

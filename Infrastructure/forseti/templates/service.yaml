@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "forseti-project.fullname" . }}
+  labels:
+    {{- include "forseti-project.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: {{ .Values.service.name }}
+      port: {{ .Values.service.port }}
+      protocol: TCP
+      targetPort: {{ .Values.service.targetport }}
+      nodePort: {{ .Values.service.nodeport }}
+    - name: {{ .Values.servicessl.name }}
+      port: {{ .Values.servicessl.port }}
+      protocol: TCP
+      targetPort: {{ .Values.servicessl.targetport }}
+      nodePort: {{ .Values.servicessl.nodeport }}
+  selector:
+    {{- include "forseti-project.selectorLabels" . | nindent 4 }}

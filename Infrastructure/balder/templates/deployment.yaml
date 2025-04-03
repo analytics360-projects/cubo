@@ -84,6 +84,16 @@ spec:
                 configMapKeyRef:
                   name: balder-configurations
                   key: nls_timestamp_format
+            - name: REKOGNITION_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: balder-configurations
+                  key: rekognition_service_url
+            - name: SANS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: balder-configurations
+                  key: sans_url
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
