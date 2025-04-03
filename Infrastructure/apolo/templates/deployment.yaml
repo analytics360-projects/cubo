@@ -47,26 +47,31 @@ spec:
               containerPort: {{ .Values.service.port }}
               protocol: TCP
           env:
-            - name: DATABASE_DATABASE
+            - name: DB_NAME
               valueFrom:
                 configMapKeyRef:
                   name: apolo-configurations
                   key: database_database
-            - name: DATABASE_HOSTNAME
+            - name: DB_HOST
               valueFrom:
                 configMapKeyRef:
                   name: apolo-configurations
                   key: database_hostname
-            - name: DATABASE_USERNAME
+            - name: DB_USER
               valueFrom:
                 configMapKeyRef:
                   name: apolo-configurations
                   key: database_username
-            - name: DATABASE_PASSWORD
+            - name: DB_PASSWORD
               valueFrom:
                 configMapKeyRef:
                   name: apolo-configurations
                   key: database_password
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: apolo-configurations
+                  key: database_port
             - name: SMTP_SERVER
               valueFrom:
                 configMapKeyRef:
