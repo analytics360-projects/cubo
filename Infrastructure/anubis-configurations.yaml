@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: anubis-configurations
 data:
-  postgresconnectionstring: 'Host=delta-db-postgresql.postgres-db.svc.cluster.local;Database=postgres;Username=postgres;Password=hA3kli1d2Z;Pooling=false;Timeout=300;CommandTimeout=300'
+  postgresconnectionstring: 'Host=postgresqllocal;Database=postgres;Username=postgres;Password=hA3kli1d2Z;Pooling=false;Timeout=300;CommandTimeout=300'
   pbxconnectionstring: 'server=10.19.5.28;userid=mysqlrootpwd;password=mysql;database=asteriskcdrdb'
   tz: 'America/Chihuahua'
   nls_timestamp_format: 'YYYY-MM-DD HH:MI'
