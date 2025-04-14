@@ -50,19 +50,10 @@ spec:
             httpGet:
               path: /health
               port: {{ .Values.service.port }}
-            initialDelaySeconds: 300
-            timeoutSeconds: 10
-            periodSeconds: 60
-            successThreshold: 1
-            failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /health
               port: {{ .Values.service.port }}
-            timeoutSeconds: 10
-            periodSeconds: 60
-            successThreshold: 1
-            failureThreshold: 3
           env:
             - name: POSTGRESCONNECTIONSTRING
               valueFrom:
@@ -94,6 +85,61 @@ spec:
                 configMapKeyRef:
                   name: balder-configurations
                   key: sans_url
+            - name: RAVENDB_URLS
+              valueFrom:
+                configMapKeyRef:
+                  name: balder-configurations
+                  key: ravendb_urls
+            - name: RAVENDB_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: balder-configurations
+                  key: ravendb_database
+            - name: SCRAPPER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: balder-configurations
+                  key: scrapper_url
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: aws_access_key_id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: aws_secret_access_key
+            - name: AWS_DEFAULT_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: aws_default_region
+            - name: MINIO_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: minio_endpoint
+            - name: MINIO_ACCESS_KEY_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: minio_access_key_id
+            - name: MINIO_SECRET_ACCESS_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: minio_secret_access_key
+            - name: BUCKET_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: bucket_name
+            - name: STORAGE_TYPE
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: storage_type
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

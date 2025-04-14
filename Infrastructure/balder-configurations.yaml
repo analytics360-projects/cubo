@@ -23,3 +23,6 @@ data:
   storage_type: 'MINIO'
   rekognition_service_url: 'http://10.19.5.41:8090/'
   sans_url: 'http://10.19.5.41:8083/'
+  ravendb_urls: 'http://10.19.5.41:8082'
+  ravendb_database: 'sans-warehouse'
+  scrapper_url: 'http://10.19.5.41:8000'
