@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: balder-configurations
+  name: anubis-configurations
 data:
-  postgresconnectionstring: 'Host=balder-db-postgresql.postgres-db.svc.cluster.local;Database=postgres;Username=postgres;Password=hA3kli1d2Z;Pooling=false;Timeout=300;CommandTimeout=300'
+  postgresconnectionstring: 'Host=postgresqllocal;Database=postgres;Username=postgres;Password=hA3kli1d2Z;Pooling=false;Timeout=300;CommandTimeout=300'
   pbxconnectionstring: 'server=10.19.5.28;userid=mysqlrootpwd;password=mysql;database=asteriskcdrdb'
   tz: 'America/Chihuahua'
   nls_timestamp_format: 'YYYY-MM-DD HH:MI'
@@ -21,8 +21,4 @@ data:
   minio_secret_access_key: 'mprLOeQlEeVBXKYuRtSUIeQmtOMBs6bH'
   bucket_name: 'orion-dev'
   storage_type: 'MINIO'
-  rekognition_service_url: 'http://10.19.5.41:8090/'
-  sans_url: 'http://10.19.5.41:8083/'
-  ravendb_urls: 'http://10.19.5.41:8082'
-  ravendb_database: 'sans-warehouse'
-  scrapper_url: 'http://10.19.5.41:8000'
+  redisconnectionstring: 'redis-master,password=427480e8130689239c1887c3982986b4f31653164ec17928731dc8858e9f726f'

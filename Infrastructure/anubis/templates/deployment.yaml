@@ -1,24 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "balder.fullname" . }}
+  name: {{ include "anubis.Api.fullname" . }}
   labels:
-    {{- include "balder.labels" . | nindent 4 }}
+    {{- include "anubis.Api.labels" . | nindent 4 }}
 spec:
-  {{- if .Values.autoscaling.enabled }}
-  scaleTargetRef:
-    kind: ReplicaSet
-    name: api
-  minReplicas: {{ .Values.autoscaling.minReplicas }}
-  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
-  targetCPUUtilizationPercentage: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}
-  {{- end }}
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "balder.selectorLabels" . | nindent 6 }}
+      {{- include "anubis.Api.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -26,13 +18,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "balder.selectorLabels" . | nindent 8 }}
+        {{- include "anubis.Api.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "balder.serviceAccountName" . }}
+      serviceAccountName: {{ include "anubis.Api.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       hostname: hostname
@@ -67,88 +59,98 @@ spec:
             - name: POSTGRESCONNECTIONSTRING
               valueFrom:
                 configMapKeyRef:
-                  name: balder-configurations
+                  name: anubis-configurations
                   key: postgresconnectionstring
             - name: ASPNETCORE_ENVIRONMENT
               valueFrom:
                 configMapKeyRef:
-                  name: balder-configurations
+                  name: anubis-configurations
                   key: aspnetcore_environment
-            - name: TZ
-              valueFrom:
-                configMapKeyRef:
-                  name: balder-configurations
-                  key: tz
-            - name: NLS_TIMESTAMP_FORMAT
-              valueFrom:
-                configMapKeyRef:
-                  name: balder-configurations
-                  key: nls_timestamp_format
-            - name: REKOGNITION_SERVICE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: balder-configurations
-                  key: rekognition_service_url
-            - name: SANS_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: balder-configurations
-                  key: sans_url
-            - name: RAVENDB_URLS
-              valueFrom:
-                configMapKeyRef:
-                  name: balder-configurations
-                  key: ravendb_urls
-            - name: RAVENDB_DATABASE
-              valueFrom:
-                configMapKeyRef:
-                  name: balder-configurations
-                  key: ravendb_database
-            - name: SCRAPPER_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: balder-configurations
-                  key: scrapper_url
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 configMapKeyRef:
-                  name: balder-configurations
+                  name: anubis-configurations
                   key: aws_access_key_id
             - name: AWS_SECRET_ACCESS_KEY
               valueFrom:
                 configMapKeyRef:
-                  name: balder-configurations
+                  name: anubis-configurations
                   key: aws_secret_access_key
             - name: AWS_DEFAULT_REGION
               valueFrom:
                 configMapKeyRef:
-                  name: balder-configurations
+                  name: anubis-configurations
                   key: aws_default_region
+            - name: TZ
+              valueFrom:
+                configMapKeyRef:
+                  name: anubis-configurations
+                  key: tz
+            - name: NLS_TIMESTAMP_FORMAT
+              valueFrom:
+                configMapKeyRef:
+                  name: anubis-configurations
+                  key: nls_timestamp_format
+            - name: PBXCONNECTIONSTRING
+              valueFrom:
+                configMapKeyRef:
+                  name: anubis-configurations
+                  key: pbxconnectionstring
+            - name: PBX_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: anubis-configurations
+                  key: pbx_port
+            - name: PBX_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: anubis-configurations
+                  key: pbx_username
+            - name: PBX_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: anubis-configurations
+                  key: pbx_password
+            - name: PBX_IP
+              valueFrom:
+                configMapKeyRef:
+                  name: anubis-configurations
+                  key: pbx_ip
+            - name: PBXCONNECTIONSTRING
+              valueFrom:
+                configMapKeyRef:
+                  name: anubis-configurations
+                  key: pbxconnectionstring
             - name: MINIO_ENDPOINT
               valueFrom:
                 configMapKeyRef:
-                  name: balder-configurations
+                  name: anubis-configurations
                   key: minio_endpoint
             - name: MINIO_ACCESS_KEY_ID
               valueFrom:
                 configMapKeyRef:
-                  name: balder-configurations
+                  name: anubis-configurations
                   key: minio_access_key_id
             - name: MINIO_SECRET_ACCESS_KEY
               valueFrom:
                 configMapKeyRef:
-                  name: balder-configurations
+                  name: anubis-configurations
                   key: minio_secret_access_key
             - name: BUCKET_NAME
               valueFrom:
                 configMapKeyRef:
-                  name: balder-configurations
+                  name: anubis-configurations
                   key: bucket_name
             - name: STORAGE_TYPE
               valueFrom:
                 configMapKeyRef:
-                  name: balder-configurations
+                  name: anubis-configurations
                   key: storage_type
+            - name: REDISCONNECTIONSTRING
+              valueFrom:
+                configMapKeyRef:
+                  name: anubis-configurations
+                  key: redisconnectionstring
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

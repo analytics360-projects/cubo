@@ -1,0 +1,108 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "apolo.fullname" . }}
+  labels:
+    {{- include "apolo.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.autoscaling.enabled }}
+  scaleTargetRef:
+    kind: ReplicaSet
+    name: api
+  minReplicas: {{ .Values.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  targetCPUUtilizationPercentage: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}
+  {{- end }}
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "apolo.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "apolo.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "apolo.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      hostname: hostname
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          env:
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: apolo-configurations
+                  key: database_database
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: apolo-configurations
+                  key: database_hostname
+            - name: DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: apolo-configurations
+                  key: database_username
+            - name: DB_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: apolo-configurations
+                  key: database_password
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: apolo-configurations
+                  key: database_port
+            - name: SMTP_SERVER
+              valueFrom:
+                configMapKeyRef:
+                  name: apolo-configurations
+                  key: smtp_server
+            - name: SMTP_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: apolo-configurations
+                  key: smtp_port
+            - name: SMTP_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: apolo-configurations
+                  key: smtp_user
+            - name: SMTP_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: apolo-configurations
+                  key: smtp_password
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

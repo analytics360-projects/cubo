@@ -1,9 +1,9 @@
-# Default values for vidar.Api.
+# Default values for apolo.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
 image:
-  repository: 009158394470.dkr.ecr.us-east-1.amazonaws.com/vidar
+  repository: 009158394470.dkr.ecr.us-east-1.amazonaws.com/apolo
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
@@ -37,18 +37,8 @@ securityContext: {}
   # runAsUser: 1000
 
 service:
-  type: NodePort
-  port: 5001
-  targetport: 5001
-  nodeport: 32001
-  name: "http"
-
-servicessl:
-  type: NodePort
-  port: 5002
-  targetport: 5002
-  nodeport: 32102
-  name: "https"
+  type: ClusterIP
+  port: 5010
 
 ingress:
   enabled: false
@@ -66,22 +56,26 @@ ingress:
   #    hosts:
   #      - chart-example.local
 
-resources:
-  limits:
-    cpu: 1000m
-    memory: 2Gi
-  requests:
-    cpu: 1000m
-    memory: 2Gi
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
 
-#replicaCount: 2
+replicaCount: 1
 
 autoscaling:
-  enabled: true
-  minReplicas: 1
-  maxReplicas: 3
-  #targetCPUUtilizationPercentage: 50
-  #targetMemoryUtilizationPercentage: 80
+  enabled: false
+  minReplicas: 3
+  maxReplicas: 64
+  targetCPUUtilizationPercentage: 50
+  # targetMemoryUtilizationPercentage: 80
 
 nodeSelector: {}
 

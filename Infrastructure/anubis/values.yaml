@@ -1,9 +1,9 @@
-# Default values for vidar.Api.
+# Default values for anubis.Api.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
 image:
-  repository: 009158394470.dkr.ecr.us-east-1.amazonaws.com/vidar
+  repository: 009158394470.dkr.ecr.us-east-1.amazonaws.com/anubis
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
