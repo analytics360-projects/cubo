@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "hjalmberi.fullname" . }}
+  labels:
+    {{- include "hjalmberi.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - protocol: TCP
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetport }}
+      nodePort: {{ .Values.service.nodeport }}
+  selector:
+    {{- include "hjalmberi.selectorLabels" . | nindent 4 }}
