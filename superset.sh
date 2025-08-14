@@ -78,13 +78,21 @@ source venv/bin/activate
 print_status "Actualizando pip..."
 pip install --upgrade pip
 
+# Actualizar setuptools y wheel
+print_status "Actualizando setuptools y wheel..."
+pip install --upgrade setuptools wheel
+
 # Instalar Superset
 print_status "Instalando Apache Superset..."
-pip install apache-superset
+# Para Python 3.12, usar versión más reciente que sea compatible
+pip install "apache-superset>=4.0.0"
 
-# Instalar dependencias adicionales necesarias
+# Instalar dependencias adicionales necesarias con versiones compatibles
 print_status "Instalando dependencias adicionales..."
 pip install flask-cors redis celery
+pip install "marshmallow>=3.19.0,<4.0.0"
+pip install Pillow  # Para screenshots y thumbnails
+pip install "numpy>=1.24.0"  # Compatible con Python 3.12
 
 # Crear configuración básica
 print_status "Creando configuración básica..."
