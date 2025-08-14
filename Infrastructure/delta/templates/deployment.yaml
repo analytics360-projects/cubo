@@ -151,6 +151,11 @@ spec:
                 configMapKeyRef:
                   name: delta-configurations
                   key: redisconnectionstring
+            - name: DISABLECACHE
+              valueFrom:
+                configMapKeyRef:
+                  name: delta-configurations
+                  key: disablecache
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
