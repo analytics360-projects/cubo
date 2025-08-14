@@ -82,6 +82,10 @@ pip install --upgrade pip
 print_status "Instalando Apache Superset..."
 pip install apache-superset
 
+# Instalar dependencias adicionales necesarias
+print_status "Instalando dependencias adicionales..."
+pip install flask-cors redis celery
+
 # Crear configuración básica
 print_status "Creando configuración básica..."
 cat > superset_config.py << 'EOF'
@@ -102,18 +106,22 @@ ENABLE_TIME_ROTATE = True
 TIME_ROTATE_LOG_LEVEL = 'INFO'
 FILENAME = f'{os.path.expanduser("~/superset")}/superset.log'
 
-# Configuración CORS
+# Configuración CORS (simplificada)
 ENABLE_CORS = True
 CORS_OPTIONS = {
     'supports_credentials': True,
-    'allow_headers': [
-        'X-CSRFToken', 'Content-Type', 'Origin', 'X-Requested-With', 'Accept',
-    ],
+}
+
+# Configuración de cache (opcional)
+CACHE_CONFIG = {
+    'CACHE_TYPE': 'SimpleCache',
+    'CACHE_DEFAULT_TIMEOUT': 300
 }
 EOF
 
-# Configurar variable de entorno
+# Configurar variables de entorno
 export SUPERSET_CONFIG_PATH="$SUPERSET_DIR/superset_config.py"
+export FLASK_APP=superset
 
 # Inicializar base de datos
 print_status "Inicializando base de datos..."
@@ -122,7 +130,6 @@ superset db upgrade
 # Crear usuario administrador
 print_status "Creando usuario administrador..."
 echo "Por favor, introduce los datos del usuario administrador:"
-export FLASK_APP=superset
 superset fab create-admin
 
 # Cargar ejemplos
@@ -143,6 +150,7 @@ cat > start_superset.sh << EOF
 cd "$SUPERSET_DIR"
 source venv/bin/activate
 export SUPERSET_CONFIG_PATH="$SUPERSET_DIR/superset_config.py"
+export FLASK_APP=superset
 superset run -h 0.0.0.0 -p 8088 --with-threads
 EOF
 
@@ -154,6 +162,7 @@ cat > activate_superset.sh << EOF
 cd "$SUPERSET_DIR"
 source venv/bin/activate
 export SUPERSET_CONFIG_PATH="$SUPERSET_DIR/superset_config.py"
+export FLASK_APP=superset
 echo "Entorno de Superset activado. Ejecuta 'superset run -p 8088' para iniciar."
 exec bash
 EOF
@@ -177,6 +186,7 @@ User=$USER
 Group=$USER
 WorkingDirectory=$SUPERSET_DIR
 Environment=SUPERSET_CONFIG_PATH=$SUPERSET_DIR/superset_config.py
+Environment=FLASK_APP=superset
 ExecStart=$SUPERSET_DIR/venv/bin/superset run -h 0.0.0.0 -p 8088 --with-threads
 Restart=always
 RestartSec=10
