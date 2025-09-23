@@ -1,0 +1,111 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "vili.fullname" . }}
+  labels:
+    {{- include "vili.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.autoscaling.enabled }}
+  scaleTargetRef:
+    kind: ReplicaSet
+    name: api
+  minReplicas: {{ .Values.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  targetCPUUtilizationPercentage: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}
+  {{- end }}
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "vili.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "vili.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "vili.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      hostname: hostname
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.service.port }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.service.port }}
+          env:
+            - name: DATABASE_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: vili-configurations
+                  key: database_database
+            - name: DATABASE_HOSTNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: vili-configurations
+                  key: database_hostname
+            - name: DATABASE_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: vili-configurations
+                  key: database_username
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: vili-configurations
+                  key: database_password
+            - name: SMTP_SERVER
+              valueFrom:
+                configMapKeyRef:
+                  name: vili-configurations
+                  key: smtp_server
+            - name: SMTP_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: vili-configurations
+                  key: smtp_port
+            - name: SMTP_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: vili-configurations
+                  key: smtp_user
+            - name: SMTP_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: vili-configurations
+                  key: smtp_password
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
