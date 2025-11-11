@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: delta-configurations
+data:
+  postgresconnectionstring: 'Host=delta-db-postgresql.postgres-db.svc.cluster.local;Database=postgres;Username=postgres;Password=hA3kli1d2Z;Pooling=false;Timeout=300;CommandTimeout=300'
+  pbxconnectionstring: 'server=10.19.5.28;userid=mysqlrootpwd;password=mysql;database=asteriskcdrdb'
+  tz: 'America/Chihuahua'
+  nls_timestamp_format: 'YYYY-MM-DD HH:MI'
+  lang: 'es_ES.utf8'
+  aspnetcore_environment: "Production"
+  aws_access_key_id: ''
+  aws_secret_access_key: ''
+  aws_default_region: 'us-east-1'
+  pbx_port: '8088'
+  pbx_username: 'asterisk'
+  pbx_password: 'asterisk'
+  pbx_ip: '10.19.5.138'
+  minio_endpoint: '10.19.5.96:9000'
+  minio_access_key_id: '4IJOrYKAmRZbI0oy'
+  minio_secret_access_key: 'mprLOeQlEeVBXKYuRtSUIeQmtOMBs6bH'
+  bucket_name: 'orion-dev'
+  storage_type: 'MINIO'
+  redisconnectionstring: 'redis-master,password=30083008'
+  disablecache: "0"
