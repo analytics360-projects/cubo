@@ -104,8 +104,8 @@ import os
 # Base de datos SQLite
 SQLALCHEMY_DATABASE_URI = f'sqlite:///{os.path.expanduser("~/superset/superset.db")}'
 
-# Clave secreta - CAMBIAR EN PRODUCCIÓN
-SECRET_KEY = 'tu_clave_secreta_muy_segura_cambiar_en_produccion'
+# Clave secreta
+SECRET_KEY = '123456789'
 
 # Configuración de seguridad
 WTF_CSRF_ENABLED = True
