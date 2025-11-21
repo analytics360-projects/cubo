@@ -91,6 +91,9 @@ pip install "apache-superset>=4.0.0"
 print_status "Instalando dependencias adicionales..."
 pip install flask-cors redis celery
 pip install psycopg2-binary
+pip install pymssql
+pip install oracledb
+pip install mysqlclient
 pip install "marshmallow=-3.26.1"
 pip install Pillow  # Para screenshots y thumbnails
 pip install "numpy>=1.24.0"  # Compatible con Python 3.12
