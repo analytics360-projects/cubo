@@ -7,6 +7,7 @@ apt update
 
 # Instalar PostgreSQL y utilidades
 apt install postgresql postgresql-contrib -y
+apt install -y libpq-dev python3-dev build-essential
 
 # Permitir tráfico en el puerto 5432 si UFW está disponible
 if command -v ufw >/dev/null 2>&1; then
