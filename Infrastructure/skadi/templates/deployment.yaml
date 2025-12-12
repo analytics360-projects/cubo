@@ -58,22 +58,22 @@ spec:
             - name: POSTGRESCONNECTIONSTRING
               valueFrom:
                 configMapKeyRef:
-                  name: skadi-configurations
+                  name: delta-configurations
                   key: postgresconnectionstring
             - name: ASPNETCORE_ENVIRONMENT
               valueFrom:
                 configMapKeyRef:
-                  name: skadi-configurations
+                  name: delta-configurations
                   key: aspnetcore_environment
             - name: TZ
               valueFrom:
                 configMapKeyRef:
-                  name: skadi-configurations
+                  name: delta-configurations
                   key: tz
             - name: NLS_TIMESTAMP_FORMAT
               valueFrom:
                 configMapKeyRef:
-                  name: skadi-configurations
+                  name: delta-configurations
                   key: nls_timestamp_format
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
