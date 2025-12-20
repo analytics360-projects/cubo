@@ -16,6 +16,8 @@ fi
 
 # Instalar PostGIS
 apt install postgis -y
+apt install postgresql-16-partman -y
+apt install postgresql-16-cron -y
 
 # Cambiar contraseña del usuario postgres
 su - postgres -c "psql -c \"ALTER ROLE postgres WITH PASSWORD '30083008';\""
@@ -48,6 +50,8 @@ EXTENSIONS=(
     "address_standardizer"
     "address_standardizer_data_us"
     "postgis_tiger_geocoder"
+    "pg_partman"
+    "pg_cron"
 )
 
 for EXT in "${EXTENSIONS[@]}"; do
