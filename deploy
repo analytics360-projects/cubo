@@ -36,6 +36,8 @@ function setup_previus() {
 
   # Only for development
   microk8s config > config
+  microk8s config > ~/.kube/config
+    
   export KUBECONFIG="$PWD/config"
   chmod 600 "$PWD/config"
 
