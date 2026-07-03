@@ -2,7 +2,11 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: frigg-configurations
+  # NOTA: valores placeholder. Los reales (credenciales BD/SMTP) se aplican
+  # directamente en el cluster y NO se versionan en este repo publico.
 data:
+  app_name: "Analytics360"
+  api_url: "http://CHANGME:32006"
   database_database: "database"
   database_hostname: "hostname"
   database_username: "username"
@@ -11,3 +15,5 @@ data:
   smtp_port: "587"
   smtp_user: ""
   smtp_password: "pass"
+  default_email_sender: "no-reply@example.com"
+  default_reply_to: "no-reply@example.com"
