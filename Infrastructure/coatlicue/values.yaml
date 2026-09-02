@@ -3,10 +3,10 @@
 # Declare variables to be passed into your templates.
 
 image:
-  repository: 009158394470.dkr.ecr.us-east-1.amazonaws.com/coatlicue
-  pullPolicy: Always
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  repository: ghcr.io/analytics360-projects/coatlicue
+  pullPolicy: IfNotPresent
+  # El appVersion del chart es "beta"; se fija el tag real desplegado.
+  tag: "v1.5.0"
 
 imagePullSecrets:
   - name: regcred
