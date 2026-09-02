@@ -4,8 +4,17 @@
 # helm template -f values.yaml vidar
 
 
-REPOSITORY_URL="009158394470.dkr.ecr.us-east-1.amazonaws.com"
-REGION="us-east-1"
+# Registro de imagenes. Se migro de ECR a Docker Hub: la cuenta de AWS
+# 009158394470 quedo suspendida y "aws ecr get-login-password" ya no responde.
+#
+# En heberestrada/images todos los servicios comparten un mismo repositorio y el
+# nombre del servicio va dentro del tag (coatlicue_v1.5.0, tlaloc_v1.5.0, ...).
+REGISTRY_SERVER="https://index.docker.io/v1/"
+REGISTRY_USER="${DOCKERHUB_USER:-heberestrada}"
+
+# Namespaces donde se crea el regcred. Se puede sobreescribir:
+#   NAMESPACES="otro" ./deploy_360 generate-pass
+NAMESPACES="${NAMESPACES:-vidar forseti skadi}"
 
 function fail() {
   local message=$1
@@ -40,6 +49,8 @@ function setup_previus() {
   chmod 600 "$PWD/config"
 
   # Install previous requirements
+  # awscli y aws-iam-authenticator se instalaban para autenticarse contra ECR.
+  # Ya no hacen falta para el registro; se dejan por si algun otro paso los usa.
   curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" &&\
   unzip awscliv2.zip && \
   ./aws/install && \
@@ -86,26 +97,29 @@ case "$1" in
       setup_previus
       ;;
   generate-pass)
-      kubectl delete secret regcred --namespace=vidar
-      kubectl create secret docker-registry regcred \
-      --docker-server=$REPOSITORY_URL \
-      --docker-username=AWS \
-      --docker-password=$(aws ecr get-login-password --region $REGION) \
-      --namespace=vidar
+      # A diferencia de ECR, cuyo token vivia 12 horas y obligaba a repetir esto
+      # a diario, el PAT de Docker Hub dura lo que se le haya fijado al crearlo.
+      # Sólo hay que volver a correrlo cuando el PAT se rote o venza.
+      #
+      # El token se toma de la variable DOCKERHUB_TOKEN; si no esta, se pide por
+      # teclado. No se pasa como argumento para que no quede en el historial ni
+      # a la vista en "ps".
+      if [[ -z "${DOCKERHUB_TOKEN:-}" ]]; then
+        read -rsp "Personal Access Token de Docker Hub para $REGISTRY_USER: " DOCKERHUB_TOKEN
+        echo
+      fi
+      [[ -n "$DOCKERHUB_TOKEN" ]] || fail "no se recibio el token"
 
-      kubectl delete secret regcred --namespace=forseti
-      kubectl create secret docker-registry regcred \
-      --docker-server=$REPOSITORY_URL \
-      --docker-username=AWS \
-      --docker-password=$(aws ecr get-login-password --region $REGION) \
-      --namespace=forseti
-
-      kubectl delete secret regcred --namespace=skadi
-      kubectl create secret docker-registry regcred \
-      --docker-server=$REPOSITORY_URL \
-      --docker-username=AWS \
-      --docker-password=$(aws ecr get-login-password --region $REGION) \
-      --namespace=skadi
+      for ns in $NAMESPACES; do
+        kubectl get namespace "$ns" >/dev/null 2>&1 || { echo "aviso: el namespace $ns no existe, se omite" >&2; continue; }
+        kubectl delete secret regcred --namespace="$ns" --ignore-not-found
+        kubectl create secret docker-registry regcred \
+          --docker-server="$REGISTRY_SERVER" \
+          --docker-username="$REGISTRY_USER" \
+          --docker-password="$DOCKERHUB_TOKEN" \
+          --namespace="$ns"
+      done
+      unset DOCKERHUB_TOKEN
       ;;
   *)
     fail "Use: $0 <deploy> [project_name]"
