@@ -5,8 +5,10 @@
 image:
   repository: heberestrada/images
   pullPolicy: IfNotPresent
-  # El appVersion del chart es "beta"; se fija el tag real desplegado.
-  tag: "v1.5.0"
+  # Todos los servicios viven en el repositorio heberestrada/images:
+  # el nombre del servicio va dentro del tag, no en el repositorio.
+  # Ademas el appVersion del chart es "beta", asi que el tag no puede quedar vacio.
+  tag: "coatlicue_v1.5.0-1"
 
 imagePullSecrets:
   - name: regcred
