@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 image:
-  repository: ghcr.io/analytics360-projects/skadi
+  repository: heberestrada/images
   pullPolicy: IfNotPresent
   # El appVersion del chart es "beta"; se fija el tag real desplegado.
   tag: "latest"
