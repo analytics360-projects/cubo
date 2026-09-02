@@ -58,22 +58,22 @@ spec:
             - name: POSTGRESCONNECTIONSTRING
               valueFrom:
                 configMapKeyRef:
-                  name: delta-configurations
+                  name: {{ .Values.configurationsConfigMap }}
                   key: postgresconnectionstring
             - name: ASPNETCORE_ENVIRONMENT
               valueFrom:
                 configMapKeyRef:
-                  name: delta-configurations
+                  name: {{ .Values.configurationsConfigMap }}
                   key: aspnetcore_environment
             - name: TZ
               valueFrom:
                 configMapKeyRef:
-                  name: delta-configurations
+                  name: {{ .Values.configurationsConfigMap }}
                   key: tz
             - name: NLS_TIMESTAMP_FORMAT
               valueFrom:
                 configMapKeyRef:
-                  name: delta-configurations
+                  name: {{ .Values.configurationsConfigMap }}
                   key: nls_timestamp_format
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

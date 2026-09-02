@@ -10,6 +10,12 @@ image:
   # Ademas el appVersion del chart es "beta", asi que el tag no puede quedar vacio.
   tag: "skadi_latest"
 
+# ConfigMap del que salen las variables de entorno. Cambia segun el cluster:
+# en Centinela es delta-configurations, en Tlaxcala tlaloc-configurations.
+# Se sobreescribe por Application de ArgoCD:
+#   spec.source.helm.parameters -> configurationsConfigMap
+configurationsConfigMap: delta-configurations
+
 imagePullSecrets:
   - name: regcred
 
