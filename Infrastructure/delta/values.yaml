@@ -42,6 +42,10 @@ service:
   targetport: 5001
   nodeport: 32001
   name: "http"
+  # Ver el comentario del servicio: el pase del video no se comparte entre replicas.
+  sessionAffinity: ClientIP
+  sessionAffinityTimeout: 10800
+  externalTrafficPolicy: Local
 
 servicessl:
   type: NodePort

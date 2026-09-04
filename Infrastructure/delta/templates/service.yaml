@@ -6,6 +6,16 @@ metadata:
     {{- include "Delta.Api.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
+  # Afinidad de sesion: el pase de un solo uso del video de camaras vive en memoria
+  # del proceso, asi que quien lo emite tiene que ser quien lo consume. Sin esto, con
+  # varias replicas el pase se emitia en una y el video se pedia a otra: 401, y la
+  # mesa mostraba "No se pudo obtener el video de la camara" en la mayoria de los
+  # intentos. `Local` conserva la IP de origen, que es lo que la afinidad reparte.
+  sessionAffinity: {{ .Values.service.sessionAffinity | default "ClientIP" }}
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: {{ .Values.service.sessionAffinityTimeout | default 10800 }}
+  externalTrafficPolicy: {{ .Values.service.externalTrafficPolicy | default "Local" }}
   ports:
     - name: {{ .Values.service.name }}
       port: {{ .Values.service.port }}
