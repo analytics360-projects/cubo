@@ -5,8 +5,11 @@
 image:
   repository: heberestrada/images
   pullPolicy: Always
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  # Etiqueta que publica Jenkins para la rama main. Estaba vacia, asi que la
+  # imagen se resolvia a heberestrada/images:beta (appVersion del chart), que no
+  # existe; el despliegue dependia de un parametro puesto a mano en la Application
+  # de ArgoCD. Al fijarla aqui, recrear la Application ya no rompe el despliegue.
+  tag: "tyr_latest"
 
 imagePullSecrets:
   - name: regcred
