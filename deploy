@@ -4,8 +4,9 @@
 # helm template -f values.yaml delta
 
 
-# Registro de imagenes. Se migro de ECR a Docker Hub: la cuenta de AWS
-# 009158394470 quedo suspendida y "aws ecr get-login-password" ya no responde.
+# Registro de imagenes. Se migro de ECR a Docker Hub por costo.
+# (La cuenta de AWS 009158394470 sigue operativa; se dio por suspendida durante
+# un tiempo, pero no lo estaba. La migracion se mantiene por el costo, no por eso.)
 #
 # En heberestrada/images todos los servicios comparten un mismo repositorio y el
 # nombre del servicio va dentro del tag (coatlicue_v1.5.0, tlaloc_v1.5.0, ...).
@@ -15,6 +16,10 @@ REGISTRY_USER="${DOCKERHUB_USER:-heberestrada}"
 # Namespaces donde se crea el regcred. Se puede sobreescribir:
 #   NAMESPACES="default" ./deploy generate-pass
 NAMESPACES="${NAMESPACES:-delta spartan skadi}"
+
+# cron no hereda el PATH de una sesion interactiva: kubectl suele vivir en
+# /usr/local/bin y microk8s en /snap/bin.
+export PATH="/usr/local/bin:/snap/bin:$PATH"
 
 function fail() {
   local message=$1
@@ -114,12 +119,16 @@ case "$1" in
 
       for ns in $NAMESPACES; do
         kubectl get namespace "$ns" >/dev/null 2>&1 || { echo "aviso: el namespace $ns no existe, se omite" >&2; continue; }
-        kubectl delete secret regcred --namespace="$ns" --ignore-not-found
+        # "apply" en vez de delete+create: es idempotente y, sobre todo, no deja
+        # al namespace sin regcred en el intervalo entre borrar y volver a crear
+        # (si un pod hacia pull justo ahi, fallaba con ImagePullBackOff).
         kubectl create secret docker-registry regcred \
           --docker-server="$REGISTRY_SERVER" \
           --docker-username="$REGISTRY_USER" \
           --docker-password="$DOCKERHUB_TOKEN" \
-          --namespace="$ns"
+          --namespace="$ns" \
+          --dry-run=client -o yaml | kubectl apply -f - \
+          || fail "no se pudo actualizar el regcred en $ns"
       done
       unset DOCKERHUB_TOKEN
       ;;
