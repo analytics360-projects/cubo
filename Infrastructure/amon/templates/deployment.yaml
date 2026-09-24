@@ -146,6 +146,46 @@ spec:
                 configMapKeyRef:
                   name: amon-configurations
                   key: redisconnectionstring
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: otel_exporter_otlp_endpoint
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: otel_service_name
+            - name: OTEL_TRACES_SAMPLER
+              valueFrom:
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: otel_traces_sampler
+            - name: OTEL_TRACES_SAMPLER_ARG
+              valueFrom:
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: otel_traces_sampler_arg
+            - name: ARI_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: ari_enabled
+            - name: ARI_APP_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: ari_app_name
+            - name: PRESENCE_TIMEZONE
+              valueFrom:
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: presence_timezone
+            - name: PBX_RECORDINGS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: pbx_recordings_port
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

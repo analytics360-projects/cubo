@@ -1,0 +1,23 @@
+# Jaeger v2 all-in-one: recibe OTLP directo (4317 gRPC, 4318 HTTP) y sirve la UI
+# en 16686. Guarda las trazas en memoria: se pierden al reiniciar el pod, que es
+# suficiente para diagnosticar. Si hace falta historial, cambiar a Badger con PVC.
+image:
+  repository: jaegertracing/jaeger
+  tag: "2.21.0"
+  pullPolicy: IfNotPresent
+
+# amon exporta a http://jaeger-service:4317 (OTEL_EXPORTER_OTLP_ENDPOINT), asi que
+# el Service conserva ese nombre fijo.
+serviceName: jaeger-service
+
+# La UI se publica por NodePort; OTLP queda solo dentro del cluster.
+ui:
+  nodeport: 32686
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 1Gi
+  requests:
+    cpu: 100m
+    memory: 256Mi

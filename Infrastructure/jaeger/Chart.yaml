@@ -1,0 +1,6 @@
+apiVersion: v2
+name: jaeger
+description: Jaeger all-in-one para recibir las trazas OTLP de amon (CuboIP)
+type: application
+version: 0.1.0
+appVersion: "2.21.0"

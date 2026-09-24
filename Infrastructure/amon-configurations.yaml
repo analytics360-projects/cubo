@@ -22,3 +22,15 @@ data:
   bucket_name: 'orion-dev'
   storage_type: 'MINIO'
   redisconnectionstring: 'redis-master,password=427480e8130689239c1887c3982986b4f31653164ec17928731dc8858e9f726f'
+  # Trazas OpenTelemetry hacia el chart jaeger (Service jaeger-service, mismo namespace).
+  otel_exporter_otlp_endpoint: 'http://jaeger-service:4317'
+  otel_service_name: 'amon-api'
+  otel_traces_sampler: 'parentbased_traceidratio'
+  otel_traces_sampler_arg: '0.25'
+  # ARI en tiempo real. El nombre de app es propio de CuboIP para no desconectar a
+  # delta si comparten Asterisk (ApplicationReplaced).
+  ari_enabled: 'true'
+  ari_app_name: 'amon-ari'
+  presence_timezone: 'America/Chihuahua'
+  # Servicio recordings-api instalado en el PBX (ver docs/pbx en amon).
+  pbx_recordings_port: '8099'
