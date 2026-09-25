@@ -34,3 +34,7 @@ data:
   presence_timezone: 'America/Chihuahua'
   # Servicio recordings-api instalado en el PBX (ver docs/pbx en amon).
   pbx_recordings_port: '8099'
+  # Constructor de reportes (opcional): usuario de sólo lectura creado con
+  # docs/reportes/crear-usuario-lectura.sql de amon. Sin esta llave amon usa
+  # postgresconnectionstring (en transacción READ ONLY) y lo avisa en el log.
+  # reportsconnectionstring: 'Host=postgresqllocal;Database=postgres;Username=amon_reportes;Password=CAMBIAR;Pooling=true;Maximum Pool Size=20;Timeout=15'

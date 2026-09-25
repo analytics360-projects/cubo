@@ -186,6 +186,14 @@ spec:
                 configMapKeyRef:
                   name: amon-configurations
                   key: pbx_recordings_port
+            # Constructor de reportes: usuario de sólo lectura (amon docs/reportes/crear-usuario-lectura.sql).
+            # Opcional: si la llave no existe, amon usa POSTGRESCONNECTIONSTRING en transacción READ ONLY.
+            - name: REPORTS_CONNECTIONSTRING
+              valueFrom:
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: reportsconnectionstring
+                  optional: true
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
