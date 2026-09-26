@@ -1,0 +1,49 @@
+# API y RTSP: solo dentro del cluster. NUNCA exponerlos como NodePort/Ingress.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.serviceName }}
+  labels:
+    {{- include "go2rtc.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "go2rtc.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: api
+      port: 1984
+      targetPort: api
+      protocol: TCP
+    - name: rtsp
+      port: 8554
+      targetPort: rtsp
+      protocol: TCP
+{{- if eq .Values.webrtc.mode "nodePort" }}
+---
+# WebRTC (ICE): lo alcanza el navegador. nodePort == puerto de escucha de go2rtc,
+# porque ICE anuncia el puerto real del proceso y no el del Service.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.serviceName }}-webrtc
+  labels:
+    {{- include "go2rtc.labels" . | nindent 4 }}
+spec:
+  type: NodePort
+  externalTrafficPolicy: Local
+  selector:
+    {{- include "go2rtc.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: webrtc-tcp
+      port: {{ .Values.webrtc.port }}
+      targetPort: webrtc-tcp
+      nodePort: {{ .Values.webrtc.port }}
+      protocol: TCP
+    - name: webrtc-udp
+      port: {{ .Values.webrtc.port }}
+      targetPort: webrtc-udp
+      nodePort: {{ .Values.webrtc.port }}
+      protocol: UDP
+{{- else if ne .Values.webrtc.mode "hostNetwork" }}
+{{- fail "webrtc.mode debe ser nodePort o hostNetwork" }}
+{{- end }}

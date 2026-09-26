@@ -1,0 +1,63 @@
+# go2rtc de CuboIP. Solo vive en la red interna del cluster:
+#   - amon lo usa por la API (GO2RTC_URL=http://go2rtc:1984) para registrar
+#     streams, pedir frame.jpeg y reenviar MSE/WebRTC al navegador.
+#   - ra-ai-worker y ra-recorder leen el RTSP (rtsp://user:pass@go2rtc:8554/<id>).
+# El navegador NUNCA habla con go2rtc salvo por el transporte de medios WebRTC
+# (ICE, puerto 8555 o el nodePort elegido), cuya señalización pasa por amon.
+image:
+  repository: alexxit/go2rtc
+  # Version fija: probada la sustitucion ${VAR} en el yaml y la auth basica.
+  tag: "1.9.10"
+  pullPolicy: IfNotPresent
+
+# Nombre fijo del Service: amon y ra lo usan por DNS (go2rtc:1984 / go2rtc:8554).
+serviceName: go2rtc
+
+# Credenciales de la API y del RTSP (las mismas para ambos). Se leen de un Secret
+# con llaves `username` y `password`, compartido con amon, ra-ai-worker y ra-recorder.
+credentials:
+  # Nombre del Secret. Si create=false debe existir antes de instalar:
+  #   kubectl create secret generic go2rtc-credentials \
+  #     --from-literal=username=go2rtc --from-literal=password="$(openssl rand -hex 24)"
+  existingSecret: go2rtc-credentials
+  # create=true hace que el chart cree el Secret con estos valores (no recomendado:
+  # quedan en el values). Si create=true y estan vacios, el template falla.
+  create: false
+  username: ""
+  password: ""
+
+webrtc:
+  # nodePort: Service NodePort tcp+udp. OJO: NodePort remapea el puerto y ICE
+  #   anuncia el puerto en el que escucha go2rtc, asi que `port` DEBE ser igual al
+  #   nodePort (rango 30000-32767), p. ej. 30555, y los candidates IP_PUBLICA:30555.
+  # hostNetwork: el pod usa la red del nodo y escucha `port` directo (p. ej. 8555).
+  #   Mas simple para ICE; el puerto queda ocupado en el nodo.
+  mode: nodePort
+  port: 30555
+  # Candidatos que go2rtc anuncia al navegador: "IP:puerto" (IP publica o de la LAN
+  # desde donde entran los operadores) o "stun:puerto" para que go2rtc descubra
+  # su IP publica por STUN. Vacio = solo IPs locales del pod (no sirve fuera del nodo).
+  candidates: []
+  #  - 203.0.113.10:30555
+  #  - stun:30555
+  # Servidores ICE (STUN/TURN) que go2rtc usa del lado servidor. Para redes con NAT
+  # simetrico o que bloquean UDP, poner un TURN (coturn) y darlo tambien al navegador.
+  iceServers: []
+  #  - urls: [ "stun:stun.l.google.com:19302" ]
+  #  - urls: [ "turn:turn.ejemplo.mx:3478" ]
+  #    username: usuario
+  #    credential: secreto
+
+logLevel: info
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 1Gi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

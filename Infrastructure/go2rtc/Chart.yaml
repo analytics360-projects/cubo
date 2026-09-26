@@ -1,0 +1,6 @@
+apiVersion: v2
+name: go2rtc
+description: go2rtc de CuboIP (video interno; el navegador solo habla con amon)
+type: application
+version: 0.1.0
+appVersion: "1.9.10"
