@@ -38,3 +38,13 @@ data:
   # docs/reportes/crear-usuario-lectura.sql de amon. Sin esta llave amon usa
   # postgresconnectionstring (en transacción READ ONLY) y lo avisa en el log.
   # reportsconnectionstring: 'Host=postgresqllocal;Database=postgres;Username=amon_reportes;Password=CAMBIAR;Pooling=true;Maximum Pool Size=20;Timeout=15'
+  # Video: go2rtc interno (chart go2rtc) y esquema vision (servicios ra). Sin
+  # go2rtc_url amon arranca como antes. Las credenciales NO van aquí: vienen de los
+  # Secrets go2rtc-credentials (username/password) y amon-video (credentials_key).
+  go2rtc_url: 'http://go2rtc:1984'
+  vision_enabled: 'true'
+  # Base RTSP interna que amon escribe en vision.cameras.rtsp_url (sin credenciales).
+  vision_rtsp_base: 'rtsp://go2rtc:8554'
+  video_ticket_ttl_seconds: '30'
+  video_max_streams_per_user: '16'
+  video_health_interval_seconds: '15'

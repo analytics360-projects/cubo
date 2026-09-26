@@ -194,6 +194,65 @@ spec:
                   name: amon-configurations
                   key: reportsconnectionstring
                   optional: true
+            # Video (go2rtc interno + esquema vision de los servicios ra). Todo opcional:
+            # sin GO2RTC_URL amon funciona como antes (sin proxy de video ni health loop).
+            - name: GO2RTC_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: go2rtc_url
+                  optional: true
+            - name: VISION_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: vision_enabled
+                  optional: true
+            - name: VISION_RTSP_BASE
+              valueFrom:
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: vision_rtsp_base
+                  optional: true
+            - name: VIDEO_TICKET_TTL_SECONDS
+              valueFrom:
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: video_ticket_ttl_seconds
+                  optional: true
+            - name: VIDEO_MAX_STREAMS_PER_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: video_max_streams_per_user
+                  optional: true
+            - name: VIDEO_HEALTH_INTERVAL_SECONDS
+              valueFrom:
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: video_health_interval_seconds
+                  optional: true
+            # Credenciales en Secrets, no en el ConfigMap: go2rtc-credentials es el mismo
+            # que usan go2rtc y ra; amon-video/credentials_key (openssl rand -base64 32)
+            # cifra las URLs RTSP de las cámaras guardadas en la base.
+            - name: GO2RTC_USER
+              valueFrom:
+                secretKeyRef:
+                  name: go2rtc-credentials
+                  key: username
+                  optional: true
+            - name: GO2RTC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: go2rtc-credentials
+                  key: password
+                  optional: true
+            - name: VIDEO_CREDENTIALS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: amon-video
+                  key: credentials_key
+                  optional: true
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
