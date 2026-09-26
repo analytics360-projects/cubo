@@ -48,3 +48,9 @@ data:
   video_ticket_ttl_seconds: '30'
   video_max_streams_per_user: '16'
   video_health_interval_seconds: '15'
+  # Cuánto cuenta contra el límite una sesión WebRTC abierta por POST (WHEP): amon no
+  # ve cuándo termina. Por el WebSocket (mse) se cuenta exacto.
+  video_webrtc_lease_seconds: '120'
+  # iceServers que amon entrega al navegador junto con el pase (JSON). Solo hace falta
+  # si el navegador no alcanza directo el candidato de go2rtc (NAT): STUN o un TURN propio.
+  # video_ice_servers: '[{"urls":"stun:stun.l.google.com:19302"}]'

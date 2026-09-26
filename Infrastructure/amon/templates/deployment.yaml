@@ -232,6 +232,18 @@ spec:
                   name: amon-configurations
                   key: video_health_interval_seconds
                   optional: true
+            - name: VIDEO_WEBRTC_LEASE_SECONDS
+              valueFrom:
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: video_webrtc_lease_seconds
+                  optional: true
+            - name: VIDEO_ICE_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: video_ice_servers
+                  optional: true
             # Credenciales en Secrets, no en el ConfigMap: go2rtc-credentials es el mismo
             # que usan go2rtc y ra; amon-video/credentials_key (openssl rand -base64 32)
             # cifra las URLs RTSP de las cámaras guardadas en la base.

@@ -63,6 +63,10 @@ spec:
               port: api
             initialDelaySeconds: 10
             periodSeconds: 30
+          # Solo lectura A PROPÓSITO: PUT/DELETE de /api/streams intentan escribir el
+          # stream (con la URL y contraseña de la cámara) en go2rtc.yaml. Así nunca llegan
+          # a disco; go2rtc responde 400 "read-only file system" pero aplica el cambio en
+          # memoria, y amon lo comprueba con GET y re-registra todo al arrancar go2rtc.
           volumeMounts:
             - name: config
               mountPath: /config
