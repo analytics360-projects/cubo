@@ -44,11 +44,15 @@ kubectl -n $NS create secret generic go2rtc-credentials \
 kubectl -n $NS create secret generic ra-database \
   --from-literal=database_url='postgresql://USUARIO:CLAVE@postgresqllocal:5432/postgres'
 
-# Llave con la que amon cifra las URLs RTSP (con usuario/contraseña) de las cámaras.
-# NO perderla: sin ella no se pueden descifrar las fuentes guardadas.
-kubectl -n $NS create secret generic amon-video \
-  --from-literal=credentials_key="$(openssl rand -base64 32)"
 ```
+
+Las URLs RTSP de las cámaras (con usuario y contraseña) las cifra amon con ASP.NET Data
+Protection (`ICredentialProtector`, el mismo que las contraseñas de Hikvision; prefijo
+`dp1:`). No hay llave que crear: el anillo de llaves se guarda en Redis
+(`REDISCONNECTIONSTRING`, lista `amon:dataprotection:credentials`) o, si se define
+`dataprotection_keys_path` en `amon-configurations`, en esa carpeta (montarla en un PVC).
+Si el anillo se pierde, las fuentes guardadas quedan ilegibles y hay que volver a
+capturarlas: respaldar Redis o usar la carpeta persistente.
 
 ## Orden de despliegue
 

@@ -245,8 +245,9 @@ spec:
                   key: video_ice_servers
                   optional: true
             # Credenciales en Secrets, no en el ConfigMap: go2rtc-credentials es el mismo
-            # que usan go2rtc y ra; amon-video/credentials_key (openssl rand -base64 32)
-            # cifra las URLs RTSP de las cámaras guardadas en la base.
+            # que usan go2rtc y ra. Las URLs RTSP de las cámaras las cifra amon con Data
+            # Protection (ICredentialProtector, compartido con Hikvision); su anillo de
+            # llaves va en Redis (REDISCONNECTIONSTRING) o en DATAPROTECTION_KEYS_PATH.
             - name: GO2RTC_USER
               valueFrom:
                 secretKeyRef:
@@ -259,11 +260,14 @@ spec:
                   name: go2rtc-credentials
                   key: password
                   optional: true
-            - name: VIDEO_CREDENTIALS_KEY
+            # Opcional: carpeta persistente para el anillo de llaves de Data Protection. Sin
+            # ella las llaves van a Redis; si Redis se vacía sin respaldo, las fuentes de
+            # video y contraseñas cifradas quedan ilegibles.
+            - name: DATAPROTECTION_KEYS_PATH
               valueFrom:
-                secretKeyRef:
-                  name: amon-video
-                  key: credentials_key
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: dataprotection_keys_path
                   optional: true
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

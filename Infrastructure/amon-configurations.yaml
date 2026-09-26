@@ -40,7 +40,10 @@ data:
   # reportsconnectionstring: 'Host=postgresqllocal;Database=postgres;Username=amon_reportes;Password=CAMBIAR;Pooling=true;Maximum Pool Size=20;Timeout=15'
   # Video: go2rtc interno (chart go2rtc) y esquema vision (servicios ra). Sin
   # go2rtc_url amon arranca como antes. Las credenciales NO van aquí: vienen de los
-  # Secrets go2rtc-credentials (username/password) y amon-video (credentials_key).
+  # Secret go2rtc-credentials (username/password). Las URLs RTSP de las cámaras se
+  # cifran con Data Protection; el anillo de llaves va en Redis salvo que se dé una
+  # carpeta persistente (montar un PVC en esa ruta):
+  # dataprotection_keys_path: '/data/dataprotection-keys'
   go2rtc_url: 'http://go2rtc:1984'
   vision_enabled: 'true'
   # Base RTSP interna que amon escribe en vision.cameras.rtsp_url (sin credenciales).
