@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.recordings.claimName }}
+  labels:
+    app.kubernetes.io/name: ra-recorder
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  annotations:
+    # Las grabaciones no se borran al desinstalar el chart.
+    helm.sh/resource-policy: keep
+spec:
+  accessModes:
+    - {{ .Values.recordings.accessMode }}
+  {{- with .Values.recordings.storageClass }}
+  storageClassName: {{ . }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.recordings.size }}

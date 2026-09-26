@@ -1,0 +1,50 @@
+# ra-clip: API FastAPI en 8001 (CLIP, ReID OSNet, InsightFace, fast-alpr, EasyOCR).
+# La consume ra-ai-worker por CLIP_URL=http://ra-clip:8001. No habla con la BD.
+image:
+  repository: heberestrada/images
+  # Imagen construida con --build-arg TORCH_INDEX=https://download.pytorch.org/whl/cu121 --build-arg GPU=1
+  tag: "ra-clip_latest"
+  pullPolicy: Always
+
+imagePullSecrets:
+  - name: regcred
+
+# Nombre fijo del Service: ra-ai-worker usa http://ra-clip:8001.
+serviceName: ra-clip
+
+gpu:
+  # Número de GPUs NVIDIA (nvidia.com/gpu). 0 = sin GPU (CLIP_DEVICE=cpu).
+  count: 1
+# runtimeClassName: "nvidia" si el cluster lo requiere (microk8s enable gpu lo crea).
+runtimeClassName: ""
+
+config:
+  CLIP_MODEL: "ViT-B-16"
+  CLIP_PRETRAINED: "laion2b_s34b_b88k"
+  REID_MODEL: "osnet_ain_x1_0"
+  # Pesos ReID domain-generalized: se descargan una vez al PVC de caché
+  # (scripts/download_reid_weights.sh de ra). Si no existen, cae al backbone ImageNet.
+  REID_WEIGHTS: "/root/.cache/osnet_ain_x1_0_msmt17.pt"
+
+# Caché de pesos (open_clip, torchreid, insightface, fast-alpr, easyocr) en /root/.cache.
+cache:
+  claimName: ra-clip-cache
+  size: 20Gi
+  storageClass: ""
+  accessMode: ReadWriteOnce
+
+resources:
+  limits:
+    cpu: 4000m
+    memory: 8Gi
+  requests:
+    cpu: 500m
+    memory: 3Gi
+
+nodeSelector: {}
+#  nvidia.com/gpu.present: "true"
+tolerations: []
+#  - key: nvidia.com/gpu
+#    operator: Exists
+#    effect: NoSchedule
+affinity: {}

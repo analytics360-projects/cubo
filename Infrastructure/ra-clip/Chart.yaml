@@ -1,0 +1,6 @@
+apiVersion: v2
+name: ra-clip
+description: Servicio de embeddings de CuboIP (repo ra) - CLIP, ReID, rostro, placas, OCR
+type: application
+version: 0.1.0
+appVersion: "latest"

@@ -1,0 +1,12 @@
+# Service sin IP: solo lo exige el StatefulSet (serviceName). El worker no expone puertos.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app.kubernetes.io/name: ra-ai-worker
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: ra-ai-worker
+    app.kubernetes.io/instance: {{ .Release.Name }}

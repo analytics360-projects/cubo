@@ -1,0 +1,103 @@
+{{- $gpu := int .Values.gpu.count }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app.kubernetes.io/name: ra-ai-worker
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  serviceName: {{ .Release.Name }}
+  replicas: {{ .Values.replicaCount }}
+  # Las réplicas no dependen entre sí: arrancan todas a la vez.
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ra-ai-worker
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ra-ai-worker
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.runtimeClassName }}
+      runtimeClassName: {{ . }}
+      {{- end }}
+      containers:
+        - name: ai-worker
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.secretName }}
+                  key: {{ .Values.database.key }}
+            - name: DB_SEARCH_PATH
+              value: {{ .Values.database.searchPath | quote }}
+            - name: GO2RTC_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.go2rtc.credentialsSecret }}
+                  key: username
+            - name: GO2RTC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.go2rtc.credentialsSecret }}
+                  key: password
+            # $(VAR) lo expande kubernetes. La contraseña no debe llevar @ : / ? # %.
+            - name: MEDIA_RTSP
+              value: "rtsp://$(GO2RTC_USER):$(GO2RTC_PASSWORD)@{{ .Values.go2rtc.host }}:{{ .Values.go2rtc.rtspPort }}"
+            - name: CLIP_URL
+              value: {{ .Values.clipUrl | quote }}
+            - name: RECORDINGS_PATH
+              value: /data/recordings
+            - name: AI_DEVICE
+              value: {{ if gt $gpu 0 }}"cuda"{{ else }}"cpu"{{ end }}
+            # Partición de cámaras entre réplicas. AI_REPLICA_INDEX sale de HOSTNAME.
+            - name: AI_REPLICAS
+              value: {{ .Values.replicaCount | quote }}
+            {{- range $k, $v := .Values.config }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          volumeMounts:
+            - name: recordings
+              mountPath: /data/recordings
+            - name: recordings
+              mountPath: /data/faces
+              subPath: {{ .Values.faces.subPath }}
+            - name: models
+              mountPath: /data/models
+          resources:
+            {{- $res := deepCopy .Values.resources }}
+            {{- if gt $gpu 0 }}
+            {{- $_ := set $res "limits" (merge (dict "nvidia.com/gpu" $gpu) ($res.limits | default dict)) }}
+            {{- end }}
+            {{- toYaml $res | nindent 12 }}
+      volumes:
+        - name: recordings
+          persistentVolumeClaim:
+            claimName: {{ .Values.recordings.claimName }}
+        - name: models
+          persistentVolumeClaim:
+            claimName: {{ .Values.models.claimName }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

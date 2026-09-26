@@ -1,0 +1,56 @@
+# ra-recorder: un ffmpeg por cámara online que graba desde go2rtc
+# (rtsp://go2rtc:8554/<vision_id>) en segmentos MP4, los indexa en vision.recordings
+# y aplica la retención. Una sola réplica: es el dueño del volumen de grabaciones.
+image:
+  repository: heberestrada/images
+  tag: "ra-recorder_latest"
+  pullPolicy: Always
+
+imagePullSecrets:
+  - name: regcred
+
+# Secret con la cadena de conexión (llave database_url):
+#   kubectl create secret generic ra-database \
+#     --from-literal=database_url='postgresql://USUARIO:CLAVE@postgresqllocal:5432/postgres'
+database:
+  secretName: ra-database
+  key: database_url
+  # El esquema vision lo crea amon (migración VisionEsquema).
+  searchPath: "vision,public"
+
+# Credenciales de go2rtc (Secret compartido con go2rtc, amon y ra-ai-worker).
+go2rtc:
+  host: go2rtc
+  rtspPort: 8554
+  credentialsSecret: go2rtc-credentials
+
+# Volumen de grabaciones y snapshots. Lo crea ESTE chart y lo monta también
+# ra-ai-worker (snapshots de alertas) con el mismo nombre de claim.
+# accessMode: ReadWriteOnce basta si todo corre en un solo nodo (microk8s de un
+# nodo). Si ra-ai-worker puede caer en otro nodo, usar ReadWriteMany (NFS, etc.).
+recordings:
+  claimName: ra-recordings
+  size: 500Gi
+  storageClass: ""          # "" = la default del cluster (microk8s-hostpath)
+  accessMode: ReadWriteOnce
+
+config:
+  DEFAULT_RETENTION_DAYS: "7"
+  SEGMENT_SECONDS: "600"
+  RECORD_AUDIO: "true"
+  RECORD_QUALITY: "copy"      # copy | 720p | 480p
+  MAX_RECORDINGS_GB: "400"    # tope duro; dejar holgura bajo recordings.size
+  MIN_FREE_GB: "20"
+  MAX_SNAPSHOTS_GB: "20"
+
+resources:
+  limits:
+    cpu: 4000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
