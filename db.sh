@@ -21,6 +21,9 @@ apt install postgresql-16-cron -y
 # pgvector: embeddings de visión (búsqueda forense, ReID, reconocimiento facial) en el
 # esquema vision de amon. pg_trgm (contrib) acelera la búsqueda parcial de placas. Sin
 # ellas amon crea el esquema igual, sin esas columnas/índices (WARNING en el log).
+# unaccent (contrib) la usan la búsqueda en narrativas, los detenidos de integración y
+# Sepomex. amon también intenta crear unaccent, pg_trgm y postgis en su migración
+# ExtensionesBase, pero si su usuario no es superusuario solo deja un aviso en el log.
 apt install postgresql-16-pgvector -y
 
 # Cambiar contraseña del usuario postgres
@@ -58,10 +61,32 @@ EXTENSIONS=(
     "pg_cron"
     "vector"
     "pg_trgm"
+    "unaccent"
 )
 
+# Las extensiones se crean en la base que usa amon, no en "postgres" (antes se creaban
+# siempre ahí y la base de amon se quedaba sin ellas si era otra). La base sale, en este
+# orden, del primer argumento, de AMON_DB o del Database= de POSTGRESCONNECTIONSTRING;
+# si no hay ninguno, "postgres" (el valor de Infrastructure/amon-configurations.yaml).
+# Ejemplo: sudo AMON_DB=cuboip ./db.sh
+AMON_DB="${1:-${AMON_DB:-}}"
+if [ -z "$AMON_DB" ] && [ -n "${POSTGRESCONNECTIONSTRING:-}" ]; then
+    AMON_DB=$(echo "$POSTGRESCONNECTIONSTRING" | tr ';' '\n' | sed -n 's/^[[:space:]]*[Dd]atabase[[:space:]]*=[[:space:]]*//p' | head -n1)
+fi
+AMON_DB="${AMON_DB:-postgres}"
+if ! [[ "$AMON_DB" =~ ^[A-Za-z0-9_]+$ ]]; then
+    echo "Nombre de base no válido: '$AMON_DB'" >&2
+    exit 1
+fi
+echo "Base de amon: $AMON_DB"
+
+# La base se crea si no existe, para que las extensiones queden en ella desde el inicio.
+if [ "$(su - postgres -c "psql -tAc \"SELECT 1 FROM pg_database WHERE datname = '$AMON_DB'\"")" != "1" ]; then
+    su - postgres -c "createdb $AMON_DB"
+fi
+
 for EXT in "${EXTENSIONS[@]}"; do
-    su - postgres -c "psql -d postgres -c \"CREATE EXTENSION IF NOT EXISTS $EXT;\""
+    su - postgres -c "psql -d $AMON_DB -c \"CREATE EXTENSION IF NOT EXISTS $EXT;\""
 done
 
-echo "PostgreSQL y PostGIS configurados correctamente para la versión $PG_VERSION."
+echo "PostgreSQL y PostGIS configurados correctamente para la versión $PG_VERSION (extensiones en la base $AMON_DB)."
