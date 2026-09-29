@@ -30,16 +30,22 @@ fotos de referencia que se suben al enrolar personas van al MinIO de amon
   cluster exige RuntimeClass, poner `runtimeClassName: nvidia` en ambos charts.
   Comprobar: `kubectl describe node | grep nvidia.com/gpu`. Sin GPU se puede
   desplegar con `gpu.count=0` (CPU, solo pruebas: muy lento).
-- **pgvector y pg_trgm** en el Postgres (`postgresqllocal`). En el servidor instalado
-  con `db.sh` (Postgres 16 por apt): `apt install postgresql-16-pgvector` y, en la base
-  de amon, `CREATE EXTENSION IF NOT EXISTS vector; CREATE EXTENSION IF NOT EXISTS pg_trgm;`
-  (`db.sh` ya lo hace en instalaciones nuevas; pg_trgm viene en `postgresql-contrib`).
-  En contenedor: la imagen `pgvector/pgvector:pg16` trae ambas. Sin pgvector amon crea
-  el esquema `vision` igual pero sin columnas de embeddings (búsqueda forense, ReID,
-  reconocimiento facial desactivados); al instalarlo, correr
-  `SELECT vision.ensure_vector();`. Sin pg_trgm la búsqueda parcial de placas funciona
-  sin índice (más lenta). El esquema `vision` lo crea la migración de amon (no hay que
-  correr SQL a mano).
+- **pgvector, PostGIS y pg_trgm** en el Postgres (`postgresqllocal`). Las tres son
+  obligatorias para amon: pgvector para los embeddings de visión, PostGIS para la zona
+  de los folios del 911 (`st_geomfromgeojson`; sin él falla ese cálculo) y pg_trgm para
+  la búsqueda parcial de placas y de cruces de calles. En el servidor instalado con
+  `db.sh` (Postgres 16 por apt) los paquetes son `postgis`, `postgresql-16-pgvector` y
+  `postgresql-contrib`; `db.sh` crea las extensiones en la base `postgres`. Las
+  extensiones son por base: si amon usa otra, créalas también ahí
+  (`CREATE EXTENSION IF NOT EXISTS postgis; CREATE EXTENSION IF NOT EXISTS vector;
+  CREATE EXTENSION IF NOT EXISTS pg_trgm;`). En contenedor, `pgvector/pgvector:pg16`
+  trae pgvector y pg_trgm pero **no PostGIS**: usa la imagen `postgres/` de ra
+  (`FROM pgvector/pgvector:pg16` + `postgresql-16-postgis-3`, crea las tres al
+  iniciar). Sin pgvector amon crea el esquema `vision` igual pero sin columnas de
+  embeddings (búsqueda forense, ReID, reconocimiento facial desactivados); al
+  instalarlo, correr `SELECT vision.ensure_vector();`. Sin pg_trgm la búsqueda parcial
+  de placas funciona sin índice (más lenta). El esquema `vision` lo crea la migración
+  de amon (no hay que correr SQL a mano).
 - Volúmenes: `ra-recordings` (grabaciones + snapshots + subPath `faces` con los
   recortes de rostros), `ra-ai-models`, `ra-clip-cache`. Con **ReadWriteOnce**
   (microk8s-hostpath) ra-recorder y ra-ai-worker tienen que caer en el mismo nodo; en
