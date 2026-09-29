@@ -1,0 +1,20 @@
+{{- if .Values.internalService.enabled }}
+# Service interno (ClusterIP) de amon: lo usa go2rtc para leer el MJPEG interno de Sense y
+# Milestone (VIDEO_AMON_INTERNAL_URL=http://amon-interno:{{ .Values.service.port }}). El
+# NodePort de siempre sigue siendo el de los navegadores.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.internalService.name }}
+  labels:
+    {{- include "amon.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: {{ .Values.service.name }}
+      port: {{ .Values.service.port }}
+      protocol: TCP
+      targetPort: {{ .Values.service.targetport }}
+  selector:
+    {{- include "amon.selectorLabels" . | nindent 4 }}
+{{- end }}

@@ -79,6 +79,17 @@ resources:
 
 #replicaCount: 2
 
+# Caché local de cada réplica para grabación y alertas de visión (VISION_CACHE_PATH).
+visionCache:
+  sizeLimit: 10Gi
+
+# Service ClusterIP adicional por el que go2rtc alcanza a amon (VIDEO_AMON_INTERNAL_URL,
+# MJPEG interno de Sense y Milestone). Nombre fijo para que el ConfigMap no dependa del
+# nombre del release.
+internalService:
+  enabled: true
+  name: amon-interno
+
 autoscaling:
   enabled: true
   minReplicas: 1

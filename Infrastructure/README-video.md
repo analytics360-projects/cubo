@@ -6,11 +6,22 @@ navegador ──HTTPS/WSS──▶ amon (JWT + permiso de cámara, pase de un so
     │  medios WebRTC      ▼
     └──UDP/TCP ICE──────▶ go2rtc ◀── RTSP de las cámaras
                           │ RTSP con auth (ClusterIP go2rtc:8554)
-                          ├──▶ ra-recorder ──▶ PVC ra-recordings
-                          └──▶ ra-ai-worker (GPU, StatefulSet) ──▶ ra-clip:8001 (GPU)
+                          ├──▶ ra-recorder ──▶ PVC ra-recordings (+ subPath faces)
+                          │     └─ contenedor media :8090 (ClusterIP ra-recorder, token) ◀── amon (lectura)
+                          └──▶ ra-ai-worker (GPU, StatefulSet) ──▶ ra-clip:8001 (GPU) ◀── amon (CLIP_URL)
                                    │
-                   Postgres: esquema vision (lo crea amon) ── NOTIFY vision_alert ──▶ amon ──SignalR──▶ navegador
+                   Postgres: esquema vision (lo crea amon) ── NOTIFY vision_alert / vision_detections ──▶ amon ──SignalR──▶ navegador
+                                   ▲
+                          ra-tracker (1 réplica): identidad global y proyección a planta
 ```
+
+amon **no monta** el PVC de ra: todo archivo de ra (reproducción y evidencia de
+grabaciones, capturas de alertas/placas/eventos, recortes de rostros) lo pide al
+servidor de medios (`VISION_MEDIA_URL`, contenedor `media` del pod de ra-recorder), así
+funciona con cualquier número de réplicas de amon aunque el PVC sea ReadWriteOnce. Las
+fotos de referencia que se suben al enrolar personas van al MinIO de amon
+(`STORAGE_TYPE`). go2rtc alcanza a amon por el Service ClusterIP `amon-interno`
+(`VIDEO_AMON_INTERNAL_URL`, MJPEG interno de Sense y Milestone).
 
 ## Requisitos del cluster
 
@@ -19,16 +30,22 @@ navegador ──HTTPS/WSS──▶ amon (JWT + permiso de cámara, pase de un so
   cluster exige RuntimeClass, poner `runtimeClassName: nvidia` en ambos charts.
   Comprobar: `kubectl describe node | grep nvidia.com/gpu`. Sin GPU se puede
   desplegar con `gpu.count=0` (CPU, solo pruebas: muy lento).
-- **pgvector** en el Postgres (`postgresqllocal`): la imagen debe ser
-  `pgvector/pgvector:pg16` (o tener la extensión instalada). Sin pgvector amon crea
-  el esquema `vision` igual pero sin columnas de embeddings (búsqueda forense,
-  ReID, reconocimiento facial desactivados); al instalarlo, correr
-  `SELECT vision.ensure_vector();`. El esquema `vision` lo crea la migración de
-  amon (no hay que correr SQL a mano).
-- Volúmenes: `ra-recordings` (grabaciones + snapshots + rostros), `ra-ai-models`,
-  `ra-clip-cache`. Con **ReadWriteOnce** (microk8s-hostpath) ra-recorder y
-  ra-ai-worker tienen que caer en el mismo nodo; en varios nodos usar una
-  storageClass **ReadWriteMany** (NFS) para `ra-recordings`.
+- **pgvector y pg_trgm** en el Postgres (`postgresqllocal`). En el servidor instalado
+  con `db.sh` (Postgres 16 por apt): `apt install postgresql-16-pgvector` y, en la base
+  de amon, `CREATE EXTENSION IF NOT EXISTS vector; CREATE EXTENSION IF NOT EXISTS pg_trgm;`
+  (`db.sh` ya lo hace en instalaciones nuevas; pg_trgm viene en `postgresql-contrib`).
+  En contenedor: la imagen `pgvector/pgvector:pg16` trae ambas. Sin pgvector amon crea
+  el esquema `vision` igual pero sin columnas de embeddings (búsqueda forense, ReID,
+  reconocimiento facial desactivados); al instalarlo, correr
+  `SELECT vision.ensure_vector();`. Sin pg_trgm la búsqueda parcial de placas funciona
+  sin índice (más lenta). El esquema `vision` lo crea la migración de amon (no hay que
+  correr SQL a mano).
+- Volúmenes: `ra-recordings` (grabaciones + snapshots + subPath `faces` con los
+  recortes de rostros), `ra-ai-models`, `ra-clip-cache`. Con **ReadWriteOnce**
+  (microk8s-hostpath) ra-recorder y ra-ai-worker tienen que caer en el mismo nodo; en
+  varios nodos usar una storageClass **ReadWriteMany** (NFS) para `ra-recordings`.
+  amon no lo monta (usa el servidor de medios) y solo lleva un `emptyDir` de caché
+  (`visionCache.sizeLimit`, 10Gi) por réplica.
 
 ## Secrets (crear antes de instalar)
 
@@ -43,6 +60,10 @@ kubectl -n $NS create secret generic go2rtc-credentials \
 # por DB_SEARCH_PATH=vision,public).
 kubectl -n $NS create secret generic ra-database \
   --from-literal=database_url='postgresql://USUARIO:CLAVE@postgresqllocal:5432/postgres'
+
+# Token interno del servidor de medios de ra (lo leen ra-recorder, contenedor media, y amon).
+kubectl -n $NS create secret generic ra-media-token \
+  --from-literal=token="$(openssl rand -hex 32)"
 
 ```
 
@@ -63,14 +84,36 @@ capturarlas: respaldar Redis o usar la carpeta persistente.
 3. `go2rtc` con los candidatos WebRTC públicos:
    `helm upgrade --install go2rtc Infrastructure/go2rtc -n $NS --set 'webrtc.candidates={IP_PUBLICA:30555}'`
    (amon vuelve a registrar los streams por sí solo; go2rtc no los persiste).
-4. `ra-recorder` (crea el PVC `ra-recordings`).
+4. `ra-recorder` (crea el PVC `ra-recordings`, el contenedor `media` y el Service
+   ClusterIP `ra-recorder:8090`; el release debe llamarse `ra-recorder` para que
+   `vision_media_url` de `amon-configurations` apunte bien).
 5. `ra-clip` (la primera vez descarga modelos al PVC de caché; para los pesos ReID
    domain-generalized ver `scripts/download_reid_weights.sh` en ra).
 6. `ra-ai-worker` (`--set replicaCount=N` para repartir cámaras entre N réplicas).
+7. `ra-tracker` (siempre 1 réplica, `Recreate`): identidad global entre cámaras y
+   proyección a planta. Solo Postgres, sin GPU ni volúmenes.
 
 Imágenes: `heberestrada/images:ra-ai-worker_latest`, `ra-clip_latest` (construidas
-con `TORCH_INDEX=https://download.pytorch.org/whl/cu121` y, clip, `GPU=1`) y
-`ra-recorder_latest`, con el mismo `regcred` que el resto.
+con `TORCH_INDEX=https://download.pytorch.org/whl/cu121` y, clip, `GPU=1`),
+`ra-recorder_latest` (recorder y servidor de medios, la misma imagen) y
+`ra-tracker_latest` (`ra/tracker`), con el mismo `regcred` que el resto.
+
+## Variables nuevas de amon (amon-configurations + Secret)
+
+| Llave / Secret | Variable | Valor |
+|---|---|---|
+| `vision_media_url` | `VISION_MEDIA_URL` | `http://ra-recorder:8090` |
+| Secret `ra-media-token` (`token`) | `VISION_MEDIA_TOKEN` | el mismo que `RA_MEDIA_TOKEN` del contenedor media |
+| `vision_default_retention_days` | `VISION_DEFAULT_RETENTION_DAYS` | igual a `DEFAULT_RETENTION_DAYS` de ra-recorder |
+| (fijo en el chart) | `VISION_CACHE_PATH` | `/cache/vision` (emptyDir) |
+| `clip_url` | `CLIP_URL` | `http://ra-clip:8001` |
+| `video_amon_internal_url` | `VIDEO_AMON_INTERNAL_URL` | `http://amon-interno:5001` (Service ClusterIP del chart amon) |
+| `video_mjpeg_ffmpeg_raw` | `VIDEO_MJPEG_FFMPEG_RAW` | `mjpeg_cfr` (plantilla `ffmpeg:` del chart go2rtc, `-r 15`) |
+| `video_mjpeg_max_fps` | `VIDEO_MJPEG_MAX_FPS` | `15` (mismo número que la plantilla) |
+
+go2rtc lleva CPU reservada (`requests.cpu` 2000m): transcodifica subflujos y el MJPEG
+de los VMS mientras alguien mira; sin reserva, con el nodo saturado, el primer
+fragmento tardó más de 11 s en las pruebas.
 
 ## Puertos a abrir en el servidor
 

@@ -1,0 +1,38 @@
+# ra-tracker: bucle por lotes sobre vision.* que une los tracks locales de todas las
+# cámaras en identidades globales (vision.global_tracks, events.global_track_id) y
+# proyecta cada detección al plano del piso (events.plan_*) con la calibración
+# cámara→planta que se guarda desde CuboIP. UNA sola réplica: necesita ver todas las
+# cámaras (el ai-worker está repartido por cámara) y dos instancias duplicarían
+# identidades. Sin GPU ni volúmenes: solo Postgres.
+image:
+  repository: heberestrada/images
+  tag: "ra-tracker_latest"
+  pullPolicy: Always
+
+imagePullSecrets:
+  - name: regcred
+
+# El mismo Secret que ra-recorder y ra-ai-worker (llave database_url).
+database:
+  secretName: ra-database
+  key: database_url
+  searchPath: "vision,public"
+
+config:
+  GLOBAL_ID_ENABLED: "1"
+  GLOBAL_ID_THRESHOLD: "0.80"
+  GLOBAL_ID_WINDOW_MIN: "30"
+  GLOBAL_ID_INTERVAL_S: "10"
+  GLOBAL_ID_LAG_S: "4"
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

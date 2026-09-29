@@ -269,8 +269,69 @@ spec:
                   name: amon-configurations
                   key: dataprotection_keys_path
                   optional: true
+            # Servidor de medios de ra (contenedor "media" de ra-recorder): el ÚNICO camino
+            # de amon a los archivos de ra (reproducción y evidencia, capturas de alertas,
+            # placas y eventos, recortes de rostros). amon no monta el PVC ra-recordings.
+            - name: VISION_MEDIA_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: vision_media_url
+                  optional: true
+            - name: VISION_MEDIA_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: ra-media-token
+                  key: token
+                  optional: true
+            - name: VISION_DEFAULT_RETENTION_DAYS
+              valueFrom:
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: vision_default_retention_days
+                  optional: true
+            # Caché de la réplica (cuadros, clips de vista previa, HEVC transcodificado,
+            # temporales de exportación): se puede perder, se regenera.
+            - name: VISION_CACHE_PATH
+              value: /cache/vision
+            # Servicio clip de ra: búsqueda forense por texto/imagen y enrolamiento de rostros.
+            - name: CLIP_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: clip_url
+                  optional: true
+            # Cómo alcanza go2rtc a amon por la red interna (MJPEG de Sense y Milestone):
+            # el Service ClusterIP amon-interno, nunca el NodePort.
+            - name: VIDEO_AMON_INTERNAL_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: video_amon_internal_url
+                  optional: true
+            # Plantilla "ffmpeg:" del go2rtc.yaml (chart go2rtc, mjpeg_cfr = "-r 15") que se
+            # agrega al transcode del MJPEG interno: evita arranques a cientos de fps.
+            - name: VIDEO_MJPEG_FFMPEG_RAW
+              valueFrom:
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: video_mjpeg_ffmpeg_raw
+                  optional: true
+            - name: VIDEO_MJPEG_MAX_FPS
+              valueFrom:
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: video_mjpeg_max_fps
+                  optional: true
+          volumeMounts:
+            - name: cache-vision
+              mountPath: /cache
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: cache-vision
+          emptyDir:
+            sizeLimit: {{ .Values.visionCache.sizeLimit }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

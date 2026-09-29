@@ -45,6 +45,9 @@ config:
   REID_WEIGHTS: "/root/.cache/osnet_ain_x1_0_msmt17.pt"
   # go2rtc re-sirve RTSP solo por TCP; OpenCV usa UDP por defecto.
   OPENCV_FFMPEG_CAPTURE_OPTIONS: "rtsp_transport;tcp"
+  # Cajas por segundo para los overlays de CuboIP (NOTIFY vision_detections), solo de
+  # las cámaras que alguien mira (vision.live_watch, la marca amon).
+  LIVE_DETECTIONS_FPS: "3"
 
 # Grabaciones/snapshots: claim creado por el chart ra-recorder (se monta el mismo).
 # Con ReadWriteOnce, ai-worker y recorder deben correr en el mismo nodo.

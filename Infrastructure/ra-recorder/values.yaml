@@ -34,6 +34,32 @@ recordings:
   storageClass: ""          # "" = la default del cluster (microk8s-hostpath)
   accessMode: ReadWriteOnce
 
+# Recortes de rostros del ai-worker (/data/faces): subPath del mismo PVC (igual que en
+# ra-ai-worker). El recorder los purga con la retención de identidad y el servidor de
+# medios los sirve a amon en /faces/.
+faces:
+  subPath: faces
+
+# Servidor de medios (recorder/media.py): segundo contenedor del pod, con el PVC montado
+# de solo lectura. Es el ÚNICO camino de amon a los archivos de ra (segmentos, capturas y
+# recortes de rostros): amon no monta el PVC (RWO) y tiene de 1 a 3 réplicas.
+# Service ClusterIP {{ .Release.Name }}:8090, nunca expuesto. Token compartido con amon:
+#   kubectl create secret generic ra-media-token --from-literal=token="$(openssl rand -hex 32)"
+media:
+  port: 8090
+  tokenSecret: ra-media-token
+  # Caché de /disk (recorrer miles de capturas no es gratis).
+  diskCacheSeconds: "300"
+  # /tmp del contenedor (el sistema de archivos de la imagen puede ser de solo lectura).
+  tmpSizeLimit: 64Mi
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
 config:
   DEFAULT_RETENTION_DAYS: "7"
   SEGMENT_SECONDS: "600"
@@ -42,6 +68,8 @@ config:
   MAX_RECORDINGS_GB: "400"    # tope duro; dejar holgura bajo recordings.size
   MIN_FREE_GB: "20"
   MAX_SNAPSHOTS_GB: "20"
+  # Zona horaria de los horarios de grabación (política en modo schedule).
+  RECORDER_TZ: "America/Mexico_City"
 
 resources:
   limits:

@@ -54,6 +54,18 @@ data:
   # Cuánto cuenta contra el límite una sesión WebRTC abierta por POST (WHEP): amon no
   # ve cuándo termina. Por el WebSocket (mse) se cuenta exacto.
   video_webrtc_lease_seconds: '120'
+  # Servidor de medios de ra (Service ClusterIP del chart ra-recorder, release ra-recorder).
+  # El token va en el Secret ra-media-token (lo leen ra-recorder y amon).
+  vision_media_url: 'http://ra-recorder:8090'
+  # Igual al DEFAULT_RETENTION_DAYS de ra-recorder (solo se muestra).
+  vision_default_retention_days: '7'
+  # Servicio clip de ra (chart ra-clip).
+  clip_url: 'http://ra-clip:8001'
+  # go2rtc -> amon por la red interna (Service amon-interno del chart amon).
+  video_amon_internal_url: 'http://amon-interno:5001'
+  # Plantilla del go2rtc.yaml (chart go2rtc, ffmpeg.mjpeg_cfr) con el mismo número de fps.
+  video_mjpeg_ffmpeg_raw: 'mjpeg_cfr'
+  video_mjpeg_max_fps: '15'
   # iceServers que amon entrega al navegador junto con el pase (JSON). Solo hace falta
   # si el navegador no alcanza directo el candidato de go2rtc (NAT): STUN o un TURN propio.
   # video_ice_servers: '[{"urls":"stun:stun.l.google.com:19302"}]'

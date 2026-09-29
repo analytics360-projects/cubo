@@ -50,13 +50,26 @@ webrtc:
 
 logLevel: info
 
+# Plantillas de la sección "ffmpeg:" del go2rtc.yaml. go2rtc 1.9.10 rechaza por API
+# fuentes con espacios, así que los argumentos del transcode viven aquí y amon los
+# nombra: VIDEO_MJPEG_FFMPEG_RAW=mjpeg_cfr agrega "#raw=mjpeg_cfr" al transcode del MJPEG
+# interno de Sense y Milestone. "-r 15" (el mismo número que VIDEO_MJPEG_MAX_FPS de amon)
+# fija la cadencia: sin ella 1 de cada 3-5 arranques en frío salía a 45-850 fps y una
+# cámara de 720p llegó a 3.5 núcleos (amon docs/video/vms.md).
+ffmpegTemplates:
+  mjpeg_cfr: "-r 15"
+
+# CPU RESERVADA: go2rtc transcodifica (subflujo a H.264 para el navegador, MJPEG de VMS a
+# H.264) mientras alguien mira; cada transcode de 720p ronda 20-45 % de un núcleo. Con el
+# nodo saturado el primer fragmento tardó más de 11 s, así que requests == lo que se espera
+# usar en hora pico (no 250m) y un límite holgado para los arranques.
 resources:
   limits:
-    cpu: 2000m
+    cpu: 4000m
     memory: 1Gi
   requests:
-    cpu: 250m
-    memory: 256Mi
+    cpu: 2000m
+    memory: 512Mi
 
 nodeSelector: {}
 tolerations: []

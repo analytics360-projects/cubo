@@ -18,6 +18,10 @@ fi
 apt install postgis -y
 apt install postgresql-16-partman -y
 apt install postgresql-16-cron -y
+# pgvector: embeddings de visión (búsqueda forense, ReID, reconocimiento facial) en el
+# esquema vision de amon. pg_trgm (contrib) acelera la búsqueda parcial de placas. Sin
+# ellas amon crea el esquema igual, sin esas columnas/índices (WARNING en el log).
+apt install postgresql-16-pgvector -y
 
 # Cambiar contraseña del usuario postgres
 su - postgres -c "psql -c \"ALTER ROLE postgres WITH PASSWORD '30083008';\""
@@ -52,6 +56,8 @@ EXTENSIONS=(
     "postgis_tiger_geocoder"
     "pg_partman"
     "pg_cron"
+    "vector"
+    "pg_trgm"
 )
 
 for EXT in "${EXTENSIONS[@]}"; do

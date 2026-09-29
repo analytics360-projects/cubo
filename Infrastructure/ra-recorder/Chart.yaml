@@ -1,6 +1,6 @@
 apiVersion: v2
 name: ra-recorder
-description: Grabador de CuboIP (repo ra) - segmentos MP4 desde go2rtc y retención
+description: Grabador de CuboIP (repo ra) - segmentos MP4 desde go2rtc, retención y servidor de medios para amon
 type: application
 version: 0.1.0
 appVersion: "latest"
