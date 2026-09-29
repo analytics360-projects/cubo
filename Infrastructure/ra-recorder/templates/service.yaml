@@ -1,0 +1,19 @@
+# Servidor de medios del recorder (contenedor "media"). ClusterIP: solo lo consume amon
+# (VISION_MEDIA_URL=http://{{ .Release.Name }}:{{ .Values.media.port }}); nunca se expone.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app.kubernetes.io/name: ra-recorder
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: ra-recorder
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  ports:
+    - name: media
+      port: {{ .Values.media.port }}
+      targetPort: media
+      protocol: TCP

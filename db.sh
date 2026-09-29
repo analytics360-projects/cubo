@@ -7,6 +7,7 @@ apt update
 
 # Instalar PostgreSQL y utilidades
 apt install postgresql postgresql-contrib -y
+apt install -y libpq-dev python3-dev build-essential
 
 # Permitir tráfico en el puerto 5432 si UFW está disponible
 if command -v ufw >/dev/null 2>&1; then
@@ -15,6 +16,12 @@ fi
 
 # Instalar PostGIS
 apt install postgis -y
+apt install postgresql-16-partman -y
+apt install postgresql-16-cron -y
+# pgvector: embeddings de visión (búsqueda forense, ReID, reconocimiento facial) en el
+# esquema vision de amon. pg_trgm (contrib) acelera la búsqueda parcial de placas. Sin
+# ellas amon crea el esquema igual, sin esas columnas/índices (WARNING en el log).
+apt install postgresql-16-pgvector -y
 
 # Cambiar contraseña del usuario postgres
 su - postgres -c "psql -c \"ALTER ROLE postgres WITH PASSWORD '30083008';\""
@@ -47,6 +54,10 @@ EXTENSIONS=(
     "address_standardizer"
     "address_standardizer_data_us"
     "postgis_tiger_geocoder"
+    "pg_partman"
+    "pg_cron"
+    "vector"
+    "pg_trgm"
 )
 
 for EXT in "${EXTENSIONS[@]}"; do

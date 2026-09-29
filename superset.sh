@@ -90,7 +90,11 @@ pip install "apache-superset>=4.0.0"
 # Instalar dependencias adicionales necesarias con versiones compatibles
 print_status "Instalando dependencias adicionales..."
 pip install flask-cors redis celery
-pip install "marshmallow>=3.19.0,<4.0.0"
+pip install psycopg2-binary
+pip install pymssql
+pip install oracledb
+pip install mysqlclient
+pip install "marshmallow=-3.26.1"
 pip install Pillow  # Para screenshots y thumbnails
 pip install "numpy>=1.24.0"  # Compatible con Python 3.12
 
@@ -103,8 +107,8 @@ import os
 # Base de datos SQLite
 SQLALCHEMY_DATABASE_URI = f'sqlite:///{os.path.expanduser("~/superset/superset.db")}'
 
-# Clave secreta - CAMBIAR EN PRODUCCIÓN
-SECRET_KEY = 'tu_clave_secreta_muy_segura_cambiar_en_produccion'
+# Clave secreta
+SECRET_KEY = '123456789'
 
 # Configuración de seguridad
 WTF_CSRF_ENABLED = True

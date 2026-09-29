@@ -1,0 +1,83 @@
+# ra-ai-worker: por cada cámara online abre el RTSP de go2rtc, corre YOLO+ByteTrack
+# y escribe eventos/alertas en el esquema vision (alerts dispara NOTIFY vision_alert,
+# que amon escucha).
+#
+# StatefulSet: cada réplica toma su parte de las cámaras con
+#   crc32(camera_id) % AI_REPLICAS == AI_REPLICA_INDEX
+# AI_REPLICAS sale de replicaCount y AI_REPLICA_INDEX lo deduce el worker del
+# sufijo -N de HOSTNAME (ra-ai-worker-0, -1, ...). Escalar = cambiar replicaCount
+# (hay que hacerlo con helm para que AI_REPLICAS cambie junto con las réplicas).
+image:
+  repository: heberestrada/images
+  # Imagen construida con --build-arg TORCH_INDEX=https://download.pytorch.org/whl/cu121
+  tag: "ra-ai-worker_latest"
+  pullPolicy: Always
+
+imagePullSecrets:
+  - name: regcred
+
+replicaCount: 1
+
+gpu:
+  # nvidia.com/gpu por réplica. 0 = CPU (AI_DEVICE=cpu; solo para pruebas).
+  count: 1
+runtimeClassName: ""   # "nvidia" si el cluster lo requiere
+
+database:
+  secretName: ra-database
+  key: database_url
+  searchPath: "vision,public"
+
+go2rtc:
+  host: go2rtc
+  rtspPort: 8554
+  credentialsSecret: go2rtc-credentials
+
+clipUrl: "http://ra-clip:8001"
+
+config:
+  # CPU/pruebas: yolo11s.pt · GPU: yolo26x.pt / yolo11x.pt (ultralytics lo descarga).
+  YOLO_MODEL: "yolo11m.pt"
+  YOLO_CONF: "0.35"
+  # Ojo: track_buffer de bytetrack se mide en frames (≈ AI_SAMPLE_FPS * 6).
+  AI_SAMPLE_FPS: "5"
+  AI_MAX_STREAMS_PER_WORKER: "8"
+  REID_WEIGHTS: "/root/.cache/osnet_ain_x1_0_msmt17.pt"
+  # go2rtc re-sirve RTSP solo por TCP; OpenCV usa UDP por defecto.
+  OPENCV_FFMPEG_CAPTURE_OPTIONS: "rtsp_transport;tcp"
+  # Cajas por segundo para los overlays de CuboIP (NOTIFY vision_detections), solo de
+  # las cámaras que alguien mira (vision.live_watch, la marca amon).
+  LIVE_DETECTIONS_FPS: "3"
+
+# Grabaciones/snapshots: claim creado por el chart ra-recorder (se monta el mismo).
+# Con ReadWriteOnce, ai-worker y recorder deben correr en el mismo nodo.
+recordings:
+  claimName: ra-recordings
+# Recortes de rostros (/data/faces): subPath dentro del mismo volumen de grabaciones
+# para que quien sirva las evidencias los encuentre en un solo lugar.
+faces:
+  subPath: faces
+
+# Modelos YOLO propios "drop-in" (.pt + .json) en /data/models, compartidos por
+# todas las réplicas.
+models:
+  claimName: ra-ai-models
+  size: 10Gi
+  storageClass: ""
+  accessMode: ReadWriteOnce
+
+resources:
+  limits:
+    cpu: 4000m
+    memory: 8Gi
+  requests:
+    cpu: 1000m
+    memory: 2Gi
+
+nodeSelector: {}
+#  nvidia.com/gpu.present: "true"
+tolerations: []
+#  - key: nvidia.com/gpu
+#    operator: Exists
+#    effect: NoSchedule
+affinity: {}

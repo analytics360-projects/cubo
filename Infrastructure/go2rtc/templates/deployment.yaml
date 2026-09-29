@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    {{- include "go2rtc.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  # Una sola instancia: los streams viven en su memoria y con hostNetwork el
+  # puerto WebRTC no se puede compartir entre dos pods del mismo nodo.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "go2rtc.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "go2rtc.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      {{- if eq .Values.webrtc.mode "hostNetwork" }}
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- end }}
+      containers:
+        - name: go2rtc
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["-config", "/config/go2rtc.yaml"]
+          env:
+            - name: GO2RTC_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.credentials.existingSecret }}
+                  key: username
+            - name: GO2RTC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.credentials.existingSecret }}
+                  key: password
+          ports:
+            - name: api
+              containerPort: 1984
+              protocol: TCP
+            - name: rtsp
+              containerPort: 8554
+              protocol: TCP
+            - name: webrtc-tcp
+              containerPort: {{ .Values.webrtc.port }}
+              protocol: TCP
+            - name: webrtc-udp
+              containerPort: {{ .Values.webrtc.port }}
+              protocol: UDP
+          # La API exige auth; el puerto abierto basta como señal de vida.
+          readinessProbe:
+            tcpSocket:
+              port: api
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: api
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          # Solo lectura A PROPÓSITO: PUT/DELETE de /api/streams intentan escribir el
+          # stream (con la URL y contraseña de la cámara) en go2rtc.yaml. Así nunca llegan
+          # a disco; go2rtc responde 400 "read-only file system" pero aplica el cambio en
+          # memoria, y amon lo comprueba con GET y re-registra todo al arrancar go2rtc.
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ .Release.Name }}-config
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

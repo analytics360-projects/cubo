@@ -1,0 +1,6 @@
+apiVersion: v2
+name: ra-tracker
+description: Rastreo multicámara de CuboIP (repo ra) - identidad global entre cámaras y proyección a planta
+type: application
+version: 0.1.0
+appVersion: "latest"

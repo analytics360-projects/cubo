@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: amon-configurations
+data:
+  postgresconnectionstring: 'Host=postgresqllocal;Database=postgres;Username=postgres;Password=hA3kli1d2Z;Pooling=false;Timeout=300;CommandTimeout=300'
+  pbxconnectionstring: 'server=10.19.5.28;userid=mysqlrootpwd;password=mysql;database=asteriskcdrdb'
+  tz: 'America/Chihuahua'
+  nls_timestamp_format: 'YYYY-MM-DD HH:MI'
+  lang: 'es_ES.utf8'
+  aspnetcore_environment: "Production"
+  aws_access_key_id: ''
+  aws_secret_access_key: ''
+  aws_default_region: 'us-east-1'
+  pbx_port: '8088'
+  pbx_username: 'asterisk'
+  pbx_password: 'asterisk'
+  pbx_ip: '10.19.5.138'
+  minio_endpoint: '10.19.5.96:9000'
+  minio_access_key_id: '4IJOrYKAmRZbI0oy'
+  minio_secret_access_key: 'mprLOeQlEeVBXKYuRtSUIeQmtOMBs6bH'
+  bucket_name: 'orion-dev'
+  storage_type: 'MINIO'
+  redisconnectionstring: 'redis-master,password=427480e8130689239c1887c3982986b4f31653164ec17928731dc8858e9f726f'
+  # Trazas OpenTelemetry hacia el chart jaeger (Service jaeger-service, mismo namespace).
+  otel_exporter_otlp_endpoint: 'http://jaeger-service:4317'
+  otel_service_name: 'amon-api'
+  otel_traces_sampler: 'parentbased_traceidratio'
+  otel_traces_sampler_arg: '0.25'
+  # ARI en tiempo real. El nombre de app es propio de CuboIP para no desconectar a
+  # delta si comparten Asterisk (ApplicationReplaced).
+  ari_enabled: 'true'
+  ari_app_name: 'amon-ari'
+  presence_timezone: 'America/Chihuahua'
+  # Servicio recordings-api instalado en el PBX (ver docs/pbx en amon).
+  pbx_recordings_port: '8099'
+  # Constructor de reportes (opcional): usuario de sólo lectura creado con
+  # docs/reportes/crear-usuario-lectura.sql de amon. Sin esta llave amon usa
+  # postgresconnectionstring (en transacción READ ONLY) y lo avisa en el log.
+  # reportsconnectionstring: 'Host=postgresqllocal;Database=postgres;Username=amon_reportes;Password=CAMBIAR;Pooling=true;Maximum Pool Size=20;Timeout=15'
+  # Video: go2rtc interno (chart go2rtc) y esquema vision (servicios ra). Sin
+  # go2rtc_url amon arranca como antes. Las credenciales NO van aquí: vienen de los
+  # Secret go2rtc-credentials (username/password). Las URLs RTSP de las cámaras se
+  # cifran con Data Protection; el anillo de llaves va en Redis salvo que se dé una
+  # carpeta persistente (montar un PVC en esa ruta):
+  # dataprotection_keys_path: '/data/dataprotection-keys'
+  go2rtc_url: 'http://go2rtc:1984'
+  vision_enabled: 'true'
+  # Base RTSP interna que amon escribe en vision.cameras.rtsp_url (sin credenciales).
+  vision_rtsp_base: 'rtsp://go2rtc:8554'
+  video_ticket_ttl_seconds: '30'
+  video_max_streams_per_user: '16'
+  video_health_interval_seconds: '15'
+  # Cuánto cuenta contra el límite una sesión WebRTC abierta por POST (WHEP): amon no
+  # ve cuándo termina. Por el WebSocket (mse) se cuenta exacto.
+  video_webrtc_lease_seconds: '120'
+  # Servidor de medios de ra (Service ClusterIP del chart ra-recorder, release ra-recorder).
+  # El token va en el Secret ra-media-token (lo leen ra-recorder y amon).
+  vision_media_url: 'http://ra-recorder:8090'
+  # Igual al DEFAULT_RETENTION_DAYS de ra-recorder (solo se muestra).
+  vision_default_retention_days: '7'
+  # Servicio clip de ra (chart ra-clip).
+  clip_url: 'http://ra-clip:8001'
+  # go2rtc -> amon por la red interna (Service amon-interno del chart amon).
+  video_amon_internal_url: 'http://amon-interno:5001'
+  # Plantilla del go2rtc.yaml (chart go2rtc, ffmpeg.mjpeg_cfr) con el mismo número de fps.
+  video_mjpeg_ffmpeg_raw: 'mjpeg_cfr'
+  video_mjpeg_max_fps: '15'
+  # iceServers que amon entrega al navegador junto con el pase (JSON). Solo hace falta
+  # si el navegador no alcanza directo el candidato de go2rtc (NAT): STUN o un TURN propio.
+  # video_ice_servers: '[{"urls":"stun:stun.l.google.com:19302"}]'

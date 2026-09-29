@@ -75,6 +75,11 @@ spec:
                 configMapKeyRef:
                   name: frigg-configurations
                   key: database_password
+            - name: API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: frigg-configurations
+                  key: api_url
             - name: SMTP_SERVER
               valueFrom:
                 configMapKeyRef:
@@ -95,6 +100,16 @@ spec:
                 configMapKeyRef:
                   name: frigg-configurations
                   key: smtp_password
+            - name: DEFAULT_EMAIL_SENDER
+              valueFrom:
+                configMapKeyRef:
+                  name: frigg-configurations
+                  key: default_email_sender
+            - name: DEFAULT_REPLY_TO
+              valueFrom:
+                configMapKeyRef:
+                  name: frigg-configurations
+                  key: default_reply_to
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

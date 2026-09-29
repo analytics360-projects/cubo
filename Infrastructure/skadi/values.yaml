@@ -5,8 +5,16 @@
 image:
   repository: heberestrada/images
   pullPolicy: Always
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  # Todos los servicios viven en el repositorio heberestrada/images:
+  # el nombre del servicio va dentro del tag, no en el repositorio.
+  # Ademas el appVersion del chart es "beta", asi que el tag no puede quedar vacio.
+  tag: "skadi_latest"
+
+# ConfigMap del que salen las variables de entorno. Cambia segun el cluster:
+# en Centinela es delta-configurations, en Tlaxcala tlaloc-configurations.
+# Se sobreescribe por Application de ArgoCD:
+#   spec.source.helm.parameters -> configurationsConfigMap
+configurationsConfigMap: delta-configurations
 
 imagePullSecrets:
   - name: regcred

@@ -1,0 +1,138 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app.kubernetes.io/name: ra-recorder
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  replicas: 1
+  # Recreate: dos grabadores sobre el mismo volumen duplicarían segmentos.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ra-recorder
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ra-recorder
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: recorder
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.secretName }}
+                  key: {{ .Values.database.key }}
+            - name: DB_SEARCH_PATH
+              value: {{ .Values.database.searchPath | quote }}
+            - name: GO2RTC_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.go2rtc.credentialsSecret }}
+                  key: username
+            - name: GO2RTC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.go2rtc.credentialsSecret }}
+                  key: password
+            # $(VAR) lo expande kubernetes con las dos anteriores. La contraseña no
+            # debe llevar @ : / ? # % (o debe ir url-encoded).
+            - name: MEDIA_RTSP
+              value: "rtsp://$(GO2RTC_USER):$(GO2RTC_PASSWORD)@{{ .Values.go2rtc.host }}:{{ .Values.go2rtc.rtspPort }}"
+            - name: RECORDINGS_PATH
+              value: /data/recordings
+            - name: FACES_PATH
+              value: /data/faces
+            {{- range $k, $v := .Values.config }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          volumeMounts:
+            - name: recordings
+              mountPath: /data/recordings
+            # Recortes de rostros del ai-worker: los purga con la retención de identidad.
+            - name: recordings
+              mountPath: /data/faces
+              subPath: {{ .Values.faces.subPath }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+        # Servidor de medios: amon (cualquier réplica) pide por HTTP, con token, los
+        # segmentos (Range), las capturas y los recortes de rostros. Solo lectura.
+        - name: media
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["python", "-m", "recorder.media"]
+          ports:
+            - name: media
+              containerPort: {{ .Values.media.port }}
+              protocol: TCP
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: RECORDINGS_PATH
+              value: /data/recordings
+            - name: FACES_PATH
+              value: /data/faces
+            - name: RA_MEDIA_PORT
+              value: {{ .Values.media.port | quote }}
+            - name: RA_MEDIA_DISK_CACHE_SECONDS
+              value: {{ .Values.media.diskCacheSeconds | quote }}
+            - name: RA_MEDIA_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.media.tokenSecret }}
+                  key: token
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: media
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: media
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.media.resources | nindent 12 }}
+          volumeMounts:
+            - name: recordings
+              mountPath: /data/recordings
+              readOnly: true
+            - name: recordings
+              mountPath: /data/faces
+              subPath: {{ .Values.faces.subPath }}
+              readOnly: true
+            - name: media-tmp
+              mountPath: /tmp
+      volumes:
+        - name: recordings
+          persistentVolumeClaim:
+            claimName: {{ .Values.recordings.claimName }}
+        - name: media-tmp
+          emptyDir:
+            sizeLimit: {{ .Values.media.tmpSizeLimit }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

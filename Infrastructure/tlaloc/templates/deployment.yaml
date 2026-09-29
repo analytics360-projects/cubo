@@ -1,0 +1,172 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "Tlaloc.Api.fullname" . }}
+  labels:
+    {{- include "Tlaloc.Api.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "Tlaloc.Api.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "Tlaloc.Api.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "Tlaloc.Api.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      hostname: hostname
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.service.port }}
+            initialDelaySeconds: 300
+            timeoutSeconds: 10
+            periodSeconds: 60
+            successThreshold: 1
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.service.port }}
+            timeoutSeconds: 10
+            periodSeconds: 60
+            successThreshold: 1
+            failureThreshold: 3
+          env:
+            - name: POSTGRESCONNECTIONSTRING
+              valueFrom:
+                configMapKeyRef:
+                  name: tlaloc-configurations
+                  key: postgresconnectionstring
+            - name: ASPNETCORE_ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: tlaloc-configurations
+                  key: aspnetcore_environment
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: tlaloc-configurations
+                  key: aws_access_key_id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: tlaloc-configurations
+                  key: aws_secret_access_key
+            - name: AWS_DEFAULT_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: tlaloc-configurations
+                  key: aws_default_region
+            - name: TZ
+              valueFrom:
+                configMapKeyRef:
+                  name: tlaloc-configurations
+                  key: tz
+            - name: NLS_TIMESTAMP_FORMAT
+              valueFrom:
+                configMapKeyRef:
+                  name: tlaloc-configurations
+                  key: nls_timestamp_format
+            - name: PBXCONNECTIONSTRING
+              valueFrom:
+                configMapKeyRef:
+                  name: tlaloc-configurations
+                  key: pbxconnectionstring
+            - name: PBX_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: tlaloc-configurations
+                  key: pbx_port
+            - name: PBX_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: tlaloc-configurations
+                  key: pbx_username
+            - name: PBX_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: tlaloc-configurations
+                  key: pbx_password
+            - name: PBX_IP
+              valueFrom:
+                configMapKeyRef:
+                  name: tlaloc-configurations
+                  key: pbx_ip
+            - name: PBXCONNECTIONSTRING
+              valueFrom:
+                configMapKeyRef:
+                  name: tlaloc-configurations
+                  key: pbxconnectionstring
+            - name: MINIO_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: tlaloc-configurations
+                  key: minio_endpoint
+            - name: MINIO_ACCESS_KEY_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: tlaloc-configurations
+                  key: minio_access_key_id
+            - name: MINIO_SECRET_ACCESS_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: tlaloc-configurations
+                  key: minio_secret_access_key
+            - name: BUCKET_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: tlaloc-configurations
+                  key: bucket_name
+            - name: STORAGE_TYPE
+              valueFrom:
+                configMapKeyRef:
+                  name: tlaloc-configurations
+                  key: storage_type
+            - name: REDISCONNECTIONSTRING
+              valueFrom:
+                configMapKeyRef:
+                  name: tlaloc-configurations
+                  key: redisconnectionstring
+            - name: DISABLECACHE
+              valueFrom:
+                configMapKeyRef:
+                  name: tlaloc-configurations
+                  key: disablecache
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
