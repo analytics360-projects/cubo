@@ -1,0 +1,93 @@
+{{- if .Values.enabled }}
+{{- $gpu := int .Values.gpu.count }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app.kubernetes.io/name: ollama
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  replicas: 1
+  # Recreate: el PVC de modelos es ReadWriteOnce y la GPU no alcanza para dos pods.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ollama
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ollama
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      {{- with .Values.runtimeClassName }}
+      runtimeClassName: {{ . }}
+      {{- end }}
+      containers:
+        - name: ollama
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # Arranca el servidor y descarga los modelos que falten (quedan en el PVC).
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              ollama serve &
+              until ollama list >/dev/null 2>&1; do sleep 1; done
+              {{- range .Values.models }}
+              ollama pull {{ . | quote }} || echo "no se pudo descargar {{ . }}"
+              {{- end }}
+              wait
+          ports:
+            - name: http
+              containerPort: 11434
+              protocol: TCP
+          env:
+            - name: OLLAMA_HOST
+              value: "0.0.0.0:11434"
+            - name: OLLAMA_KEEP_ALIVE
+              value: {{ .Values.keepAlive | quote }}
+            - name: OLLAMA_NUM_PARALLEL
+              value: {{ .Values.numParallel | quote }}
+            {{- if gt $gpu 0 }}
+            - name: NVIDIA_VISIBLE_DEVICES
+              value: "all"
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /api/tags
+              port: http
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /api/tags
+              port: http
+            periodSeconds: 60
+            timeoutSeconds: 10
+          volumeMounts:
+            - name: models
+              mountPath: /root/.ollama
+          resources:
+            {{- $res := deepCopy .Values.resources }}
+            {{- if gt $gpu 0 }}
+            {{- $_ := set $res "limits" (merge (dict "nvidia.com/gpu" $gpu) ($res.limits | default dict)) }}
+            {{- end }}
+            {{- toYaml $res | nindent 12 }}
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: {{ .Values.cache.claimName }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

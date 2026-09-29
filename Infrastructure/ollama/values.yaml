@@ -1,0 +1,62 @@
+# Ollama para el copiloto de amon (docs/plataforma/copiloto.md en amon).
+# amon lo usa con COPILOT_PROVIDER=ollama y OLLAMA_URL=http://ollama:11434.
+# Sin este chart (o con enabled=false) el copiloto responde igual, con las
+# plantillas de sus herramientas (degradado).
+enabled: true
+
+image:
+  repository: ollama/ollama
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+# Nombre fijo del Service: amon usa http://ollama:11434.
+serviceName: ollama
+
+# Modelos que se descargan al arrancar (al PVC). El primero debe coincidir con
+# COPILOT_MODEL de amon. Debe soportar tools (tool calling).
+#   CPU (desarrollo):  qwen2.5:1.5b (≈1 GB) o qwen2.5:0.5b (≈0.4 GB)
+#   GPU (producción):  qwen2.5:7b (≈4.7 GB) o llama3.1:8b
+models:
+  - qwen2.5:1.5b
+
+# Mantener el modelo cargado entre preguntas (OLLAMA_KEEP_ALIVE).
+keepAlive: "30m"
+# Peticiones en paralelo por modelo (OLLAMA_NUM_PARALLEL). En CPU conviene 1.
+numParallel: 1
+
+gpu:
+  # Número de GPUs NVIDIA (nvidia.com/gpu). 0 = CPU.
+  count: 0
+# runtimeClassName: "nvidia" si el cluster lo requiere (microk8s enable gpu lo crea).
+runtimeClassName: ""
+
+cache:
+  claimName: ollama-models
+  size: 20Gi
+  storageClass: ""
+  accessMode: ReadWriteOnce
+
+resources:
+  # CPU (modelo chico). Con GPU: requests cpu 1, memory 8Gi y el limit de nvidia.com/gpu lo agrega la plantilla.
+  limits:
+    cpu: 4000m
+    memory: 6Gi
+  requests:
+    cpu: 1000m
+    memory: 2Gi
+
+nodeSelector: {}
+#  nvidia.com/gpu.present: "true"
+tolerations: []
+#  - key: nvidia.com/gpu
+#    operator: Exists
+#    effect: NoSchedule
+affinity: {}
+
+# Ejemplo de producción con GPU (helm upgrade -f values-gpu.yaml):
+#   models: ["qwen2.5:7b"]
+#   numParallel: 2
+#   gpu: { count: 1 }
+#   runtimeClassName: nvidia
+#   resources: { requests: { cpu: 1000m, memory: 8Gi }, limits: { memory: 16Gi } }
+#   tolerations: [{ key: nvidia.com/gpu, operator: Exists, effect: NoSchedule }]

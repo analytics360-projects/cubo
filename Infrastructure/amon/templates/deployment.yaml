@@ -194,6 +194,26 @@ spec:
                   name: amon-configurations
                   key: reportsconnectionstring
                   optional: true
+            # Fase 2, plataforma (todo opcional; ver docs/plataforma en amon): copiloto,
+            # bitácora de auditoría, LPR externo, reproductor SGVideo y credenciales de cámaras.
+            {{- range $env, $key := dict "COPILOT_PROVIDER" "copilot_provider" "OLLAMA_URL" "ollama_url" "COPILOT_MODEL" "copilot_model" "COPILOT_TIMEOUT_SECONDS" "copilot_timeout_seconds" "COPILOT_DEBATE" "copilot_debate" "COPILOT_TIMEZONE" "copilot_timezone" "COPILOT_TURNO_HORAS" "copilot_turno_horas" "OPENAI_BASE_URL" "openai_base_url" "AUDIT_ENABLED" "audit_enabled" "AUDIT_RETENTION_DAYS" "audit_retention_days" "AUDIT_EXCLUDE" "audit_exclude" "LPR_IMPORT_ENABLED" "lpr_import_enabled" "LPR_IMPORT_INTERVAL_SECONDS" "lpr_import_interval_seconds" "LPR_IMPORT_CORPORACION" "lpr_import_corporacion" "DAHUA_PLAYER_URL" "dahua_player_url" "CAMERAS_EXPOSE_CREDENTIALS" "cameras_expose_credentials" }}
+            - name: {{ $env }}
+              valueFrom:
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: {{ $key }}
+                  optional: true
+            {{- end }}
+            # Secretos de la fase 2 (Secret amon-plataforma, opcional): frase del reproductor
+            # SGVideo y llave del proveedor OpenAI-compatible.
+            {{- range $env, $key := dict "DAHUA_PLAYER_KEY" "dahua_player_key" "OPENAI_API_KEY" "openai_api_key" }}
+            - name: {{ $env }}
+              valueFrom:
+                secretKeyRef:
+                  name: amon-plataforma
+                  key: {{ $key }}
+                  optional: true
+            {{- end }}
             # Video (go2rtc interno + esquema vision de los servicios ra). Todo opcional:
             # sin GO2RTC_URL amon funciona como antes (sin proxy de video ni health loop).
             - name: GO2RTC_URL

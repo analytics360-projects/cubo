@@ -69,3 +69,18 @@ data:
   # iceServers que amon entrega al navegador junto con el pase (JSON). Solo hace falta
   # si el navegador no alcanza directo el candidato de go2rtc (NAT): STUN o un TURN propio.
   # video_ice_servers: '[{"urls":"stun:stun.l.google.com:19302"}]'
+  # Fase 2, plataforma (docs/plataforma en amon). Copiloto: Ollama del chart ollama.
+  copilot_provider: 'ollama'
+  ollama_url: 'http://ollama:11434'
+  copilot_model: 'qwen2.5:1.5b'
+  copilot_timeout_seconds: '60'
+  copilot_debate: 'false'
+  copilot_timezone: 'America/Chihuahua'
+  # Bitácora de auditoría: retención por defecto (la pantalla la cambia en ConfiguracionGlobal).
+  audit_retention_days: '365'
+  # LPR externo a las placas de identidad (requiere LprUrl/CookieLPR o sense_db_connection).
+  lpr_import_enabled: 'false'
+  # Reproductor SGVideo de Dahua (la frase va en el Secret amon-plataforma, dahua_player_key).
+  # dahua_player_url: 'https://…/dahuaPlayer/'
+  # El front ya no usa contraseñas de cámaras: false (true solo para un front anterior a la fase 2).
+  cameras_expose_credentials: 'false'

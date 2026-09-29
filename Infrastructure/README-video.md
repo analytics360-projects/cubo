@@ -125,3 +125,20 @@ fragmento tardó más de 11 s en las pruebas.
 
 **Nunca** exponer 1984 (API go2rtc) ni 8554 (RTSP): van por ClusterIP y exigen
 usuario/contraseña. Detalle de ICE, candidatos y TURN en `go2rtc/README.md`.
+
+## Ollama (copiloto de amon, fase 2)
+
+Chart `Infrastructure/ollama`: Deployment + Service ClusterIP `ollama:11434` + PVC `ollama-models`
+(modelos). Descarga al arrancar los modelos de `models` (el primero = `copilot_model` de
+`amon-configurations`). CPU por defecto con `qwen2.5:1.5b`; producción con GPU:
+
+```bash
+helm upgrade --install ollama Infrastructure/ollama -n <ns> \
+  --set 'models={qwen2.5:7b}' --set gpu.count=1 --set runtimeClassName=nvidia \
+  --set resources.requests.memory=8Gi --set resources.limits.memory=16Gi
+# y en amon-configurations: copilot_model: 'qwen2.5:7b', copilot_debate: 'true' (opcional)
+```
+
+Sin el chart (o `enabled: false`) el copiloto responde igual con las plantillas de sus
+herramientas. Secret opcional `amon-plataforma` con `dahua_player_key` (reproductor SGVideo) y
+`openai_api_key` (si `copilot_provider: openai`).

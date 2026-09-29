@@ -1,0 +1,6 @@
+apiVersion: v2
+name: ollama
+description: Modelo de lenguaje local para el copiloto de CuboIP (amon api/Copiloto)
+type: application
+version: 0.1.0
+appVersion: "latest"
