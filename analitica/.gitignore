@@ -1,0 +1,6 @@
+.env
+nginx/superset.key
+nginx/fullchain.crt
+nginx/lang/
+shots/
+__pycache__/

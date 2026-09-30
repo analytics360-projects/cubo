@@ -1,0 +1,81 @@
+/* CuboIP Analítica — ajustes finos sobre el tema de Superset.
+   Los colores base viven en THEME_DEFAULT / THEME_DARK (superset_config.py);
+   aquí solo va lo que los tokens de Ant Design no alcanzan. */
+
+:root {
+  --cuboip-brand: #5F7D2A;
+  --cuboip-accent: #0E7490;
+  --cuboip-hero: url("/static/assets/cuboip/login-hero-light.svg");
+  --cuboip-hero-bg: #FFFFFF;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --cuboip-brand: #B9D03C;
+    --cuboip-accent: #22D3EE;
+    --cuboip-hero: url("/static/assets/cuboip/login-hero-dark.svg");
+    --cuboip-hero-bg: #0C1016;
+  }
+}
+
+/* ---------- Acceso: pantalla dividida como en horus ---------- */
+body:has(#username) #main-menu { display: none; }
+body:has(#username) .ant-layout { min-height: 100vh; }
+body:has(#username) main.ant-layout-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  min-height: 100vh;
+  padding: 0 !important;
+}
+body:has(#username) main.ant-layout-content::before {
+  content: "";
+  background: var(--cuboip-hero-bg) var(--cuboip-hero) left center / cover no-repeat;
+  border-right: 1px solid rgba(127, 127, 127, .14);
+}
+body:has(#username) main.ant-layout-content > div {
+  min-height: 100vh;
+  padding: 24px;
+}
+body:has(#username) .ant-card {
+  width: min(400px, 100%);
+  border-radius: 16px;
+  box-shadow: 0 18px 50px -24px rgba(15, 23, 42, .35);
+}
+body:has(#username) .ant-card-head { border-bottom: 0; padding-top: 12px; }
+body:has(#username) .ant-card-head-title { font-size: 20px; font-weight: 600; letter-spacing: -.2px; }
+body:has(#username) .ant-btn-primary { height: 40px; font-size: 14px; font-weight: 500; }
+@media (max-width: 991px) {
+  body:has(#username) main.ant-layout-content { grid-template-columns: 1fr; }
+  body:has(#username) main.ant-layout-content::before { display: none; }
+}
+
+/* ---------- Barra superior: 52 px con línea inferior, como .v-topnav ---------- */
+#main-menu {
+  backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: 0 1px 0 rgba(127, 127, 127, .10), 0 8px 24px -16px rgba(0, 0, 0, .25);
+}
+#main-menu .main-nav .ant-menu-item,
+#main-menu .main-nav .ant-menu-submenu-title { font-weight: 500; }
+#main-menu .main-nav .ant-menu-item-selected,
+#main-menu .main-nav .ant-menu-submenu-selected > .ant-menu-submenu-title { color: var(--cuboip-accent); }
+
+/* ---------- Tableros: tarjetas con radio 12 y sombra tenue ---------- */
+.dashboard-component-chart-holder {
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 8px 24px -18px rgba(15, 23, 42, .22);
+}
+.dashboard-component-header .header-title,
+.dashboard-markdown h1, .dashboard-markdown h2 { letter-spacing: -.2px; }
+
+/* Encabezados de tabla como en horus: 11 px, mayúsculas y espaciado */
+.superset-legacy-chart-table thead th,
+.ag-header-cell-text,
+table.table thead th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+/* Números grandes con cifras tabulares */
+.big_number .header-line,
+.superset-legacy-chart-big-number .header-line { font-variant-numeric: tabular-nums; letter-spacing: -.5px; }
+
