@@ -5,6 +5,9 @@ Convenciones:
   vision.* y corp.* guardan timestamptz (UTC); public.* guarda la hora local de amon.
 - Se excluyen siempre los datos de simulación.
 - Etiquetas y valores en español, listos para mostrarse.
+- Ninguna métrica puede llamarse igual que un valor con color fijo (LABEL_COLORS): Superset
+  resuelve el color de la serie por el nombre visible y el choque le hace ignorar el color
+  del tablero (pasó con "Sin conexión" en cámaras).
 - En tablas grandes el filtro de tiempo se empuja al SQL con Jinja (from_dttm/to_dttm)
   para no recorrer toda la tabla en el servidor compartido 10.19.5.100.
 """
@@ -233,8 +236,8 @@ SELECT pc.id,
         },
         "metrics": [
             {"name": "camaras", "label": "Cámaras", "sql": "COUNT(*)", "format": ",d"},
-            {"name": "camaras_en_linea", "label": "En línea", "sql": "COUNT(*) FILTER (WHERE estado_video = 'En línea')", "format": ",d"},
-            {"name": "camaras_caidas", "label": "Sin conexión", "sql": "COUNT(*) FILTER (WHERE estado_video = 'Sin conexión')", "format": ",d"},
+            {"name": "camaras_en_linea", "label": "Cámaras en línea", "sql": "COUNT(*) FILTER (WHERE estado_video = 'En línea')", "format": ",d"},
+            {"name": "camaras_caidas", "label": "Cámaras sin conexión", "sql": "COUNT(*) FILTER (WHERE estado_video = 'Sin conexión')", "format": ",d"},
             {"name": "disponibilidad", "label": "Disponibilidad de video",
              "sql": "COUNT(*) FILTER (WHERE estado_video = 'En línea')::float / NULLIF(COUNT(*), 0)", "format": ".0%"},
             {"name": "con_analitica", "label": "Con analítica de IA (%)",
@@ -351,8 +354,8 @@ SELECT lc.ts AT TIME ZONE '{TZ}' AS fecha,
                     "linea": {"label": "Línea"}, "clase": {"label": "Clase"}, "grupo": {"label": "Grupo"}, "sentido": {"label": "Sentido"}},
         "metrics": [
             {"name": "cruces", "label": "Cruces", "sql": "COUNT(*)", "format": ",d"},
-            {"name": "personas", "label": "Personas", "sql": "COUNT(*) FILTER (WHERE grupo = 'Personas')", "format": ",d"},
-            {"name": "vehiculos", "label": "Vehículos", "sql": "COUNT(*) FILTER (WHERE grupo = 'Vehículos')", "format": ",d"},
+            {"name": "personas", "label": "Personas contadas", "sql": "COUNT(*) FILTER (WHERE grupo = 'Personas')", "format": ",d"},
+            {"name": "vehiculos", "label": "Vehículos contados", "sql": "COUNT(*) FILTER (WHERE grupo = 'Vehículos')", "format": ",d"},
         ],
     },
     # ------------------------------------------------------------------ Control de acceso
