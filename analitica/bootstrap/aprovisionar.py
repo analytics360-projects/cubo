@@ -93,12 +93,22 @@ def main():
 
     ds_ids = {}
     for ds in DATASETS:
-        ds_ids[ds["name"]] = ss.upsert_dataset(db_id, ds)
+        try:
+            ds_ids[ds["name"]] = ss.upsert_dataset(db_id, ds)
+        except RuntimeError as e:
+            # Datasets de módulos que aún no están en la base (p. ej. shai antes de su migración):
+            # se omiten con sus gráficas y tableros, y se crean en la siguiente corrida.
+            if not ds.get("opcional"):
+                raise
+            print(f"  dataset {ds['name']}: OMITIDO (falta el esquema {ds.get('schema')}): {str(e)[:160]}")
+            continue
         print(f"  dataset {ds['name']}: {ds_ids[ds['name']]}")
 
     existing = ss.managed_charts()
     chart_ids, chart_names = {}, {}
     for key, (ds_name, title, (viz, params), desc) in CHARTS.items():
+        if ds_name not in ds_ids:
+            continue
         params = {**params, "color_scheme": "cuboip"}
         chart_ids[key] = ss.upsert_chart(key, title, viz, ds_ids[ds_name], params, desc, existing)
         chart_names[key] = title
@@ -108,8 +118,14 @@ def main():
             print(f"  gráfica retirada: {key}")
     print(f"  {len(chart_ids)} gráficas")
 
+    tableros = []
     for dash in DASHBOARDS:
         keys = [cell[0] for row in dash["rows"] for cell in row if cell[0] != "md"]
+        faltan = [k for k in keys if k not in chart_ids]
+        if faltan or any(f[0] != "time" and f[3] not in ds_ids for f in dash["filters"]):
+            print(f"  tablero {dash['title']}: OMITIDO (faltan datasets opcionales)")
+            continue
+        tableros.append(dash)
         ids = [chart_ids[k] for k in keys]
         meta = {
             "color_scheme": "cuboip",
@@ -132,14 +148,14 @@ def main():
 
     # Relación gráfica ↔ tableros (la API no la deriva del layout).
     owners = {}
-    for dash in DASHBOARDS:
+    for dash in tableros:
         for row in dash["rows"]:
             for cell in row:
                 if cell[0] != "md":
                     owners.setdefault(chart_ids[cell[0]], set()).add(dash["id"])
     for chart_id, dash_ids in owners.items():
         ss.put(f"chart/{chart_id}", {"dashboards": sorted(dash_ids)})
-    reportes(ss, db_id, {d["slug"]: d["id"] for d in DASHBOARDS})
+    reportes(ss, db_id, {d["slug"]: d["id"] for d in tableros})
     print("listo")
 
 

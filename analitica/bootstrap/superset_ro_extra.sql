@@ -33,4 +33,20 @@ BEGIN
     END IF;
   END LOOP;
 END $$;
+-- Vistas de los módulos (las migraciones de amon ya dan esta lectura si el rol existía; esto la
+-- repone si el rol se creó después). khonsu: tableros de operación; shai: predictivo y clasificación.
+DO $$
+BEGIN
+  IF to_regnamespace('khonsu') IS NOT NULL THEN
+    GRANT USAGE ON SCHEMA khonsu TO superset_ro;
+    GRANT SELECT ON khonsu.v_folios, khonsu.v_cumplimiento, khonsu.v_calor, khonsu.v_protocolo_folio,
+                    khonsu.metas, khonsu.configuracion TO superset_ro;
+  END IF;
+  IF to_regnamespace('shai') IS NOT NULL THEN
+    GRANT USAGE ON SCHEMA shai TO superset_ro;
+    GRANT SELECT ON shai.v_valores, shai.v_riesgo, shai.alertas, shai.capas TO superset_ro;
+    GRANT SELECT (id, creado_en, terminado_en, estado, activo, parametros, referencia, eventos, celdas, metricas, duracion_ms)
+      ON shai.modelos TO superset_ro;
+  END IF;
+END $$;
 COMMIT;

@@ -25,6 +25,8 @@ LABEL_COLORS = {
     "Visión IA": "#0EA5C6", "911": "#FF4D5E", "Alarma": "#F5B544", "App ciudadana": "#7C5CFF",
     "Pendiente": "#F5B544", "Entregado": "#16A34A", "Devuelto": "#94A3B8",
     "Dentro": "#0EA5C6", "Salió": "#16A34A", "Preregistrada": "#7C5CFF", "Cancelada": "#94A3B8",
+    "En meta": "#16A34A", "Fuera de meta": "#DC2626", "Sin meta": "#94A3B8", "Sin medición": "#CBD5E1", "No aplica": "#64748B",
+    "Cumplido": "#16A34A", "Incumplido": "#DC2626", "Sin protocolo": "#CBD5E1", "Sin evaluar": "#F5B544",
 }
 
 
@@ -153,6 +155,25 @@ def mapa(lat="lat", lng="lng", color=(14, 165, 198), radius=60, dimension=None, 
         p["js_tooltip"] = ""
         p["tooltip_contents"] = tooltip
     return ("deck_scatter", p)
+
+
+def barras_multi(metrics, dim, limit=12, fmt=",.1f", horizontal=True, stack=True):
+    """Barras con varias métricas por categoría (p. ej. tramos de tiempo apilados por incidencia)."""
+    return ("echarts_timeseries_bar", {
+        "x_axis": dim, "metrics": metrics, "groupby": [], "orientation": "horizontal" if horizontal else "vertical",
+        "x_axis_sort": metrics[0], "x_axis_sort_asc": False, "x_axis_sort_series_type": "sum", "row_limit": limit,
+        "stack": "Stack" if stack else None, "show_value": False, "only_total": True, "show_legend": True,
+        "legendOrientation": "top", "legendType": "scroll", "rich_tooltip": True, "y_axis_format": fmt,
+        "truncateYAxis": False, "time_range": "No filter", "xAxisLabelRotation": 0,
+    })
+
+
+def mapa_calor(metric, lat="lat", lng="lng", radius=40, scheme="cuboip_alarma"):
+    """Mapa de calor deck.gl ponderado por la métrica (se encuadra solo a los datos)."""
+    return ("deck_heatmap", {"spatial": {"type": "latlong", "latCol": lat, "lonCol": lng}, "size": metric,
+                             "row_limit": 10000, "mapbox_style": MAPA_CLARO, "viewport": VISTA_CHIHUAHUA, "autozoom": True,
+                             "linear_color_scheme": scheme, "intensity": 1, "radius_pixels": radius,
+                             "aggregation": "SUM", "time_range": "No filter"})
 
 
 def metric_label(name):
@@ -300,6 +321,62 @@ CHARTS = {
     "cp_preg": ("cuboip_copiloto", "Preguntas al copiloto", kpi("preguntas", "consultas en lenguaje natural"), None),
     "cp_conv": ("cuboip_copiloto", "Conversaciones", kpi("conversaciones", "sesiones con el copiloto"), None),
     "cp_resp": ("cuboip_copiloto", "Tiempo de respuesta", kpi("resp_seg", "segundos promedio", ",.1f"), None),
+
+    # --- Tiempos de servicio y cumplimiento (khonsu.v_cumplimiento)
+    "sv_total": ("cuboip_servicio", "Folios", kpi_trend("sv_folios", "fecha"), None),
+    "sv_desp": ("cuboip_servicio", "Despacho (min)", kpi("prom_despacho", "recepción → primera unidad", ",.1f"), "Promedio desde que se recibe el folio hasta que se despacha la primera unidad."),
+    "sv_lleg": ("cuboip_servicio", "Llegada (min)", kpi("prom_llegada_sv", "recepción → en sitio", ",.1f"), None),
+    "sv_lleg90": ("cuboip_servicio", "Llegada P90 (min)", kpi("p90_llegada", "9 de cada 10 llegan antes", ",.1f"), None),
+    "sv_cierre": ("cuboip_servicio", "Cierre (min)", kpi("prom_cierre_sv", "recepción → cierre", ",.1f"), None),
+    "sv_meta": ("cuboip_servicio", "Cumplimiento de metas", kpi("pct_meta", "folios en meta / medidos", ".0%"), "Metas por tramo configuradas en CuboIP (Reportes → Tiempos de servicio → Metas)."),
+    "sv_meta_g": ("cuboip_servicio", "Cumplimiento de metas", medidor("pct_meta", intervals="0.7,0.9,1", colors="1,4,2"), "Folios en meta sobre folios con meta y medición."),
+    "sv_tramos": ("cuboip_servicio", "Tramos del servicio por incidencia",
+                  barras_multi(["prom_atencion_sv", "prom_despacho", "prom_traslado", "prom_en_sitio"], "incidencia"),
+                  "Minutos promedio de cada tramo: atención, despacho, traslado y tiempo en sitio."),
+    "sv_tiempos": ("cuboip_servicio", "Evolución de los tiempos",
+                   serie(["prom_despacho", "prom_llegada_sv", "p90_llegada", "prom_cierre_sv"], "fecha", kind="line", stack=False, fmt=",.1f"), None),
+    "sv_meta_serie": ("cuboip_servicio", "Cumplimiento por día",
+                      serie(["pct_meta", "pct_meta_despacho", "pct_meta_llegada", "pct_meta_cierre"], "fecha", kind="line", stack=False, fmt=".0%"), None),
+    "sv_resultado": ("cuboip_servicio", "Resultado contra la meta", dona("sv_folios", "resultado_meta"), None),
+    "sv_sitios": ("cuboip_servicio", "Ranking de sitios",
+                  tabla(["sitio", "cliente"], ["sv_folios", "sv_abiertos", "prom_llegada_sv", "p90_llegada", "prom_cierre_sv", "pct_meta"],
+                        order="sv_folios", limit=200,
+                        conditional=[{"colorScheme": "#DC2626", "column": "pct_meta", "operator": "<", "targetValue": 0.8}],
+                        formats={"prom_llegada_sv": ",.1f", "p90_llegada": ",.1f", "prom_cierre_sv": ",.1f", "pct_meta": ".0%"}),
+                  "Sitios con más folios; en rojo los que cumplen menos del 80 % de sus metas."),
+    "sv_lentos": ("cuboip_servicio", "Sitios con llegada más lenta (P90)", barras("p90_llegada", "sitio", limit=10, fmt=",.1f"), None),
+    "sv_clientes": ("cuboip_servicio", "Clientes",
+                    tabla(["cliente"], ["sv_folios", "sv_sitios", "prom_llegada_sv", "pct_meta", "sv_fuera_meta"], order="sv_folios",
+                          formats={"prom_llegada_sv": ",.1f", "pct_meta": ".0%"}), None),
+    "sv_incid": ("cuboip_servicio", "Tiempos y cumplimiento por incidencia",
+                 tabla(["incidencia"], ["sv_folios", "prom_despacho", "prom_llegada_sv", "prom_cierre_sv", "pct_meta"], order="sv_folios",
+                       formats={"prom_despacho": ",.1f", "prom_llegada_sv": ",.1f", "prom_cierre_sv": ",.1f", "pct_meta": ".0%"}), None),
+    "sv_corp": ("cuboip_servicio", "Cumplimiento por corporación", barras("pct_meta", "corporacion", fmt=".0%"), None),
+    "sv_calor": ("cuboip_servicio", "Mapa de calor: día y hora", calor("sv_folios", "hora", "dia_semana", "cuboip_alarma"), "Cuándo se concentran los folios."),
+    "sv_calor_lleg": ("cuboip_servicio", "Llegada promedio: día y hora", calor("prom_llegada_sv", "hora", "dia_semana", "cuboip_alarma", ",.1f"), "Franjas en que se llega más tarde."),
+    "sv_mapa": ("cuboip_calor", "Mapa de calor de folios", mapa_calor("calor_peso"), "Densidad de folios ponderada por prioridad (urgente 4, alta 3, media 2, baja 1)."),
+    "sv_proto": ("cuboip_servicio", "Protocolos cumplidos", kpi("pct_protocolo", "de los folios con protocolo evaluado", ".0%"), None),
+    "sv_proto_pasos": ("cuboip_servicio", "Pasos cumplidos", kpi("pct_pasos", "pasos hechos / pasos del protocolo", ".0%"), None),
+    "sv_proto_res": ("cuboip_servicio", "Resultado del protocolo", dona("sv_folios", "resultado_protocolo"), None),
+    "sv_detalle": ("cuboip_servicio", "Folios fuera de meta",
+                   detalle(["folio", "fecha", "sitio", "cliente", "incidencia", "prioridad", "meta", "min_despacho", "min_llegada", "min_cierre",
+                            "resultado_meta"], "fecha",
+                           formats={"folio": "d", "min_despacho": ",.1f", "min_llegada": ",.1f", "min_cierre": ",.1f"}),
+                   "Últimos folios con su meta; filtra Resultado de la meta = Fuera de meta para revisar."),
+
+    # --- Riesgo y clasificación (shai; opcional)
+    "rk_zonas": ("cuboip_riesgo", "Zonas evaluadas", kpi("riesgo_zonas", "celdas o sitios del modelo"), None),
+    "rk_mapa": ("cuboip_riesgo", "Mapa de riesgo", mapa_calor("riesgo_esperado", radius=50), "Folios esperados por zona en la semana (modelo activo)."),
+    "rk_calor": ("cuboip_riesgo", "Riesgo: día y franja", calor("riesgo_esperado", "franja", "dia_semana", "cuboip_alarma", ",.1f"), None),
+    "rk_top": ("cuboip_riesgo", "Zonas de mayor riesgo",
+               tabla(["zona", "capa", "sitio"], ["riesgo_esperado", "riesgo_max"], order="riesgo_esperado", limit=50,
+                     formats={"riesgo_esperado": ",.1f", "riesgo_max": ".0%"}), None),
+    "rk_alertas": ("cuboip_alertas_preventivas", "Alertas preventivas", kpi_trend("prev_alertas", "fecha"), None),
+    "rk_alertas_estado": ("cuboip_alertas_preventivas", "Alertas por estado", dona("prev_alertas", "estado"), None),
+    "rk_alertas_nivel": ("cuboip_alertas_preventivas", "Alertas por nivel y capa", barras("prev_alertas", "capa", ["nivel"]), None),
+    "rk_clas": ("cuboip_clasificacion", "Folios clasificados", kpi("clas_folios", "desde la narrativa"), None),
+    "rk_prec": ("cuboip_clasificacion", "Precisión de la clasificación", kpi("clas_precision", "aciertos / revisados por operador", ".0%"), None),
+    "rk_valores": ("cuboip_clasificacion", "Valores por campo", barras("clas_valores", "campo", ["valor"]), None),
 }
 
 
@@ -422,6 +499,47 @@ DASHBOARDS = [
             [("au_usuario", 6, 55), ("au_modulo", 6, 55)],
             [("au_calor", 6, 50), ("cp_preg", 2, 50), ("cp_conv", 2, 50), ("cp_resp", 2, 50)],
             [("au_detalle", 12, 60)],
+        ],
+    },
+    {
+        "slug": "servicio",
+        "title": "Tiempos de servicio y cumplimiento",
+        "description": "Recepción → despacho → llegada → cierre, metas por tramo, protocolos, ranking de sitios y mapas de calor.",
+        "filters": [("time", "Periodo", "Last month"), ("select", "Cliente", "cliente", "cuboip_servicio"),
+                    ("select", "Sitio", "sitio", "cuboip_servicio"), ("select", "Corporación", "corporacion", "cuboip_servicio"),
+                    ("select", "Incidencia", "incidencia", "cuboip_servicio"), ("select", "Prioridad", "prioridad", "cuboip_servicio"),
+                    ("select", "Resultado de la meta", "resultado_meta", "cuboip_servicio")],
+        "rows": [
+            [("md", 12, 10, _md("Tiempos de servicio", "Minutos desde que se recibe el folio. Sin simulaciones; los tramos atípicos se descartan. "
+                                 "Las metas se configuran en CuboIP: Reportes → Tiempos de servicio → Metas."))],
+            [("sv_total", 3, 30), ("sv_desp", 2, 30), ("sv_lleg", 2, 30), ("sv_lleg90", 2, 30), ("sv_cierre", 3, 30)],
+            [("sv_tiempos", 8, 50), ("sv_meta_g", 4, 50)],
+            [("sv_tramos", 6, 55), ("sv_incid", 6, 55)],
+            [("md", 12, 10, _md("Cumplimiento", "Cada tramo se compara con la meta más específica que lo define (sitio, cliente, incidencia, prioridad o corporación)."))],
+            [("sv_meta", 3, 50), ("sv_meta_serie", 6, 50), ("sv_resultado", 3, 50)],
+            [("sv_proto", 3, 40), ("sv_proto_pasos", 3, 40), ("sv_proto_res", 3, 40),
+             ("md", 3, 40, "#### Protocolos\nSe llenan cuando el módulo de protocolos guiados registra los pasos de cada folio. Mientras tanto se ven como *Sin protocolo*.")],
+            [("md", 12, 10, _md("Sitios y clientes"))],
+            [("sv_sitios", 8, 60), ("sv_lentos", 4, 60)],
+            [("sv_clientes", 6, 50), ("sv_corp", 6, 50)],
+            [("md", 12, 10, _md("Mapas de calor"))],
+            [("sv_mapa", 7, 70), ("sv_calor", 5, 70)],
+            [("sv_calor_lleg", 12, 50)],
+            [("sv_detalle", 12, 60)],
+        ],
+    },
+    {
+        "slug": "riesgo",
+        "title": "Riesgo y clasificación",
+        "description": "Predictivo por ubicación y franja, alertas preventivas y clasificación automática de la narrativa.",
+        "filters": [("time", "Periodo", "Last month"), ("select", "Capa", "capa", "cuboip_riesgo"),
+                    ("select", "Cliente", "cliente", "cuboip_riesgo"), ("select", "Día de la semana", "dia_semana", "cuboip_riesgo")],
+        "rows": [
+            [("rk_zonas", 3, 30), ("rk_alertas", 3, 30), ("rk_clas", 3, 30), ("rk_prec", 3, 30)],
+            [("rk_mapa", 7, 70), ("rk_top", 5, 70)],
+            [("rk_calor", 12, 50)],
+            [("rk_alertas_estado", 4, 50), ("rk_alertas_nivel", 8, 50)],
+            [("rk_valores", 12, 55)],
         ],
     },
 ]

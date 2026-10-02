@@ -27,7 +27,7 @@ Superset con la marca de CuboIP para tableros, reportes programados y alertas so
 
 ## Tableros
 
-`bootstrap/` crea o actualiza de forma idempotente la conexión, 13 datasets virtuales con métricas en español, más de 100 gráficas y 7 tableros con filtros nativos:
+`bootstrap/` crea o actualiza de forma idempotente la conexión, 18 datasets virtuales con métricas en español, 140 gráficas y 9 tableros con filtros nativos:
 
 1. Resumen ejecutivo
 2. Alertas de IA y analíticas de video
@@ -36,6 +36,36 @@ Superset con la marca de CuboIP para tableros, reportes programados y alertas so
 5. Vehículos, placas y aforo
 6. Control de acceso y corporativo
 7. Auditoría y uso de la plataforma
+8. Tiempos de servicio y cumplimiento (`/superset/dashboard/servicio/`)
+9. Riesgo y clasificación (`/superset/dashboard/riesgo/`, opcional: requiere el esquema `shai`)
+
+### Tiempos de servicio y cumplimiento
+
+Lee las vistas `khonsu.*` de amon (migración `20261028093000_KhonsuTableros`, documentadas en
+`amon/docs/khonsu/README.md`). La lógica de los tiempos vive en la base, no en Superset: el panel de
+horus (Reportes → Tiempos de servicio) y este tablero dan las mismas cifras.
+
+| Dataset | Vista | Para qué |
+|---|---|---|
+| `cuboip_servicio` | `khonsu.v_cumplimiento` | Un renglón por folio: tramos en minutos (atención, despacho, traslado, llegada, en sitio, cierre), meta aplicada, resultado contra la meta y protocolo. |
+| `cuboip_calor` | `khonsu.v_calor` | Folios con coordenadas (del folio o del sitio) y peso por prioridad para el mapa de calor. |
+
+Filtros nativos: periodo, **cliente**, sitio, corporación, incidencia, prioridad y resultado de la
+meta. El enlace "Abrir en Analítica" de horus apunta a este tablero (slug configurable en horus).
+
+**Un cliente que solo debe ver lo suyo** (usuario de Superset por cliente): crea un rol a partir de
+`CuboIP Consulta` y una regla de *Row Level Security* (Configuración → Seguridad de filas) de tipo
+*Regular* sobre `cuboip_servicio` y `cuboip_calor` con la cláusula `empresa_id = <id del cliente>`
+(o `id_cuenta IN (...)` por sitios). Los filtros nativos no son seguridad: sin RLS el usuario puede
+quitarlos.
+
+### Riesgo y clasificación (opcional)
+
+Datasets `cuboip_riesgo` (`shai.v_riesgo`), `cuboip_alertas_preventivas` (`shai.alertas`) y
+`cuboip_clasificacion` (`shai.v_valores`) del módulo shai (rama `feat/predictivo-clasificacion` de
+amon, `amon/docs/shai/README.md` §10). Están marcados `opcional`: mientras la base no tenga el
+esquema `shai`, `aprovisionar.py` los omite junto con sus gráficas y el tablero, y los crea en la
+siguiente corrida.
 
 Reglas de los datasets:
 
@@ -58,6 +88,8 @@ tools/shot.sh /superset/dashboard/resumen-ejecutivo/ resumen light 1600x3400   #
 Límites del rol: 20 conexiones, `statement_timeout` de 60 s y solo lectura.
 
 Tras migraciones nuevas hay que volver a correr los dos scripts. Las tablas nuevas no quedan expuestas solas.
+Las migraciones de khonsu y shai dan la lectura de sus vistas a `superset_ro` si el rol ya existe;
+`superset_ro_extra.sql` la repone si el rol se creó después.
 
 ## Pendiente
 
