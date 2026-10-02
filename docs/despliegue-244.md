@@ -246,7 +246,8 @@ creados; puede repetirse. Un `restart` no basta: hay que recrear.
   `https://cubo.servicios360.com.mx/health`.
 - Cámaras: `camaras.video_estado` o `GET api/Video/{id}/fuente`.
 - Video del agente que no abre fuera de la LAN: revisar `THOT_URL_EMISOR` (debe ser el dominio
-  público) y, para segundo plano, el NAT de TURN (Pendiente).
+  público) y el NAT de TURN (Pendiente): con TURN configurado la app no usa el camino por el
+  servidor, así que sin esa NAT el video por datos móviles no conecta.
 - Disco raíz: las imágenes de Docker viven en `/` y hay poco espacio; no dejar imágenes viejas.
 
 ## Pendientes

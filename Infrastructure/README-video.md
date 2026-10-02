@@ -142,8 +142,9 @@ El video de la app del agente (montu) y el video por SMS no pasan por go2rtc: lo
   y debe ser la pública (`wss://cubo.servicios360.com.mx/thot/`).
 - `/api/Thot/senal/*` es solo para la red interna (thot → amon, firmado con `THOT_SECRETO`); el
   proxy público responde 403 en `/api/Thot/senal/evento`.
-- Cloudflare no pasa UDP. Con la app en pantalla el video viaja por WebSocket a través de thot;
-  con la app en segundo plano o la pantalla apagada la app usa WebRTC nativo y necesita **TURN**.
+- Cloudflare no pasa UDP. La app del agente transmite por WebRTC nativo y necesita **TURN** fuera
+  de la LAN. Solo cae al WebSocket a través de thot si amon no entrega TURN y la app está visible;
+  con TURN configurado (como en el .244) no lo usa.
 - TURN: coturn con credenciales efímeras (`use-auth-secret`). amon genera usuario y credencial con
   `THOT_TURN_SECRETO` (el mismo valor que `static-auth-secret` de coturn) y entrega
   `THOT_TURN_URLS` a la app. En el .244: coturn escucha en 7178 udp/tcp y releva en
