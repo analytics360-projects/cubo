@@ -132,6 +132,27 @@ fragmento tardó más de 11 s en las pruebas.
 **Nunca** exponer 1984 (API go2rtc) ni 8554 (RTSP): van por ClusterIP y exigen
 usuario/contraseña. Detalle de ICE, candidatos y TURN en `go2rtc/README.md`.
 
+## Video del agente y por SMS (thot) y TURN
+
+El video de la app del agente (montu) y el video por SMS no pasan por go2rtc: los atiende
+**thot** (`ra/thot`, Node + ffmpeg), con pases que emite amon (`amon/docs/thot/README.md`).
+
+- Señalización y página del celular por WebSocket en `/thot/` y `/v/<código>` del mismo dominio
+  (en el .244, detrás del nginx de horus). La URL que amon entrega a la app es `THOT_URL_EMISOR`
+  y debe ser la pública (`wss://cubo.servicios360.com.mx/thot/`).
+- `/api/Thot/senal/*` es solo para la red interna (thot → amon, firmado con `THOT_SECRETO`); el
+  proxy público responde 403 en `/api/Thot/senal/evento`.
+- Cloudflare no pasa UDP. Con la app en pantalla el video viaja por WebSocket a través de thot;
+  con la app en segundo plano o la pantalla apagada la app usa WebRTC nativo y necesita **TURN**.
+- TURN: coturn con credenciales efímeras (`use-auth-secret`). amon genera usuario y credencial con
+  `THOT_TURN_SECRETO` (el mismo valor que `static-auth-secret` de coturn) y entrega
+  `THOT_TURN_URLS` a la app. En el .244: coturn escucha en 7178 udp/tcp y releva en
+  7180-7199/udp; el NAT público 3478 → 7178 y 7180-7199/udp está **Pendiente**.
+- En el cluster todavía no hay chart de thot ni de coturn (**Pendiente**); el ejemplo de compose,
+  nginx y coturn está en `ra/thot/deploy/`.
+
+Guía del ambiente público, puertos y NAT: `docs/despliegue-244.md`.
+
 ## Ollama (copiloto de amon, fase 2)
 
 Chart `Infrastructure/ollama`: Deployment + Service ClusterIP `ollama:11434` + PVC `ollama-models`
