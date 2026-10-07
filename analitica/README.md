@@ -38,7 +38,6 @@ Superset con la marca de CuboIP para tableros, reportes programados y alertas so
 6. Control de acceso y corporativo
 7. Auditoría y uso de la plataforma
 8. Tiempos de servicio y cumplimiento (`/superset/dashboard/servicio/`)
-9. Riesgo y clasificación (`/superset/dashboard/riesgo/`, opcional: requiere el esquema `shai`)
 
 ### Tiempos de servicio y cumplimiento
 
@@ -60,7 +59,11 @@ meta. El enlace "Abrir en Analítica" de horus apunta a este tablero (slug confi
 (o `id_cuenta IN (...)` por sitios). Los filtros nativos no son seguridad: sin RLS el usuario puede
 quitarlos.
 
-### Riesgo y clasificación (opcional)
+### Riesgo y clasificación (retirado de Superset)
+
+El predictivo y la clasificación viven en horus (*Reportes > Riesgo por zona* y el panel del folio), no en Superset. Los datasets `cuboip_riesgo`, `cuboip_alertas_preventivas` y `cuboip_clasificacion` quedan en la base sin tablero.
+
+<!-- seccion anterior: -->
 
 Datasets `cuboip_riesgo` (`shai.v_riesgo`), `cuboip_alertas_preventivas` (`shai.alertas`) y
 `cuboip_clasificacion` (`shai.v_valores`) del módulo shai (rama `feat/predictivo-clasificacion` de

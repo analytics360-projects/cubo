@@ -405,19 +405,6 @@ CHARTS = {
                            formats={"folio": "d", "min_despacho": ",.1f", "min_llegada": ",.1f", "min_cierre": ",.1f"}),
                    "Últimos folios con su meta; filtra Resultado de la meta = Fuera de meta para revisar."),
 
-    # --- Riesgo y clasificación (shai; opcional)
-    "rk_zonas": ("cuboip_riesgo", "Zonas evaluadas", kpi("riesgo_zonas", "celdas o sitios del modelo"), None),
-    "rk_mapa": ("cuboip_riesgo", "Mapa de riesgo", mapa_calor("riesgo_esperado", radius=50), "Folios esperados por zona en la semana (modelo activo)."),
-    "rk_calor": ("cuboip_riesgo", "Riesgo: día y franja", calor("riesgo_esperado", "franja", "dia_semana", "cuboip_alarma", ",.1f"), None),
-    "rk_top": ("cuboip_riesgo", "Zonas de mayor riesgo",
-               tabla(["zona", "capa", "sitio"], ["riesgo_esperado", "riesgo_max"], order="riesgo_esperado", limit=50,
-                     formats={"riesgo_esperado": ",.1f", "riesgo_max": ".0%"}), None),
-    "rk_alertas": ("cuboip_alertas_preventivas", "Alertas preventivas", kpi_trend("prev_alertas", "fecha"), None),
-    "rk_alertas_estado": ("cuboip_alertas_preventivas", "Alertas por estado", dona("prev_alertas", "estado"), None),
-    "rk_alertas_nivel": ("cuboip_alertas_preventivas", "Alertas por nivel y capa", barras("prev_alertas", "capa", ["nivel"]), None),
-    "rk_clas": ("cuboip_clasificacion", "Folios clasificados", kpi("clas_folios", "desde la narrativa"), None),
-    "rk_prec": ("cuboip_clasificacion", "Precisión de la clasificación", kpi("clas_precision", "aciertos / revisados por operador", ".0%"), None),
-    "rk_valores": ("cuboip_clasificacion", "Valores por campo", barras("clas_valores", "campo", ["valor"]), None),
 }
 
 
@@ -592,20 +579,6 @@ DASHBOARDS = [
             [("sv_mapa", 7, 70), ("sv_calor", 5, 70)],
             [("sv_calor_lleg", 12, 50)],
             [("sv_detalle", 12, 60)],
-        ],
-    },
-    {
-        "slug": "riesgo",
-        "title": "Riesgo y clasificación",
-        "description": "Predictivo por ubicación y franja, alertas preventivas y clasificación automática de la narrativa.",
-        "filters": [("time", "Periodo", "Last month"), ("select", "Capa", "capa", "cuboip_riesgo"),
-                    ("select", "Cliente", "cliente", "cuboip_riesgo"), ("select", "Día de la semana", "dia_semana", "cuboip_riesgo")],
-        "rows": [
-            [("rk_zonas", 3, 30), ("rk_alertas", 3, 30), ("rk_clas", 3, 30), ("rk_prec", 3, 30)],
-            [("rk_mapa", 7, 70), ("rk_top", 5, 70)],
-            [("rk_calor", 12, 50)],
-            [("rk_alertas_estado", 4, 50), ("rk_alertas_nivel", 8, 50)],
-            [("rk_valores", 12, 55)],
         ],
     },
 ]
