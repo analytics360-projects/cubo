@@ -1,6 +1,7 @@
 """Vuelca serie -> color de cada gráfica ECharts de un tablero. Uso: python colores.py /superset/dashboard/<slug>/"""
 import os, sys, json
 from playwright.sync_api import sync_playwright
+BASE = "https://nginx" + os.environ.get("SUPERSET_APP_ROOT", "").rstrip("/")
 JS = """() => [...document.querySelectorAll('[_echarts_instance_]')].map(el => {
   const card = el.closest('.dashboard-component-chart-holder');
   const title = card ? (card.querySelector('.header-title, [data-test=editable-title]')?.innerText || '') : '';
@@ -16,9 +17,9 @@ JS = """() => [...document.querySelectorAll('[_echarts_instance_]')].map(el => {
 with sync_playwright() as p:
     b = p.chromium.launch()
     pg = b.new_context(ignore_https_errors=True, viewport={"width": 1600, "height": 2400}).new_page()
-    pg.goto("https://nginx/login/"); pg.fill("#username", os.environ["ADMIN_USERNAME"]); pg.fill("#password", os.environ["ADMIN_PASSWORD"])
+    pg.goto(BASE + "/login/"); pg.fill("#username", os.environ["ADMIN_USERNAME"]); pg.fill("#password", os.environ["ADMIN_PASSWORD"])
     pg.keyboard.press("Enter"); pg.wait_for_load_state("networkidle")
-    pg.goto("https://nginx" + sys.argv[1]); pg.wait_for_load_state("networkidle"); pg.wait_for_timeout(12000)
+    pg.goto(BASE + sys.argv[1]); pg.wait_for_load_state("networkidle"); pg.wait_for_timeout(12000)
     for c in pg.evaluate(JS):
         print(json.dumps(c, ensure_ascii=False))
     if len(sys.argv) > 2:

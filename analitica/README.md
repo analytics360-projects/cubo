@@ -6,7 +6,8 @@ Superset con la marca de CuboIP para tableros, reportes programados y alertas so
 |---|---|
 | VM | `dev-superset-cuboip-01`, Proxmox 360 (10.19.5.11), VMID 110, 8 vCPU / 16 GB / 100 GB, Ubuntu 24.04 |
 | IP | 10.19.5.243/24, gw 10.19.5.1, DNS 10.19.5.250 |
-| URL | https://10.19.5.243/ (certificado firmado por "CuboIP Desarrollo CA"; `http://10.19.5.243/ca.crt` para instalar la CA) |
+| URL | Pública: `https://cubo.servicios360.com.mx/analitica/` (proxy `inf-proxy-cuboip-01`, ver `cubo/proxy-publico`). Interna: `https://10.19.5.243/analitica/` (certificado de "CuboIP Desarrollo CA"; `http://10.19.5.243/ca.crt` para instalar la CA) |
+| Subruta | `SUPERSET_APP_ROOT=/analitica` en `.env`. Superset 6.1 antepone la subruta dos veces al logo y arma las miniaturas sin ella: `nginx/default.conf` corrige ambos |
 | Acceso SSH | `ubuntu@10.19.5.243` con la llave de `heber@mac` |
 | Directorio | `/opt/cuboip-analitica` |
 | Datos | base `cuboip` en 10.19.5.100 (la misma que usa el staging del .244), rol **`superset_ro`** de solo lectura |

@@ -121,6 +121,13 @@ spec:
                 configMapKeyRef:
                   name: amon-configurations
                   key: minio_endpoint
+            # Origen público de las URLs prefirmadas (p. ej. "/s3" detrás del proxy). Opcional.
+            - name: MINIO_PUBLIC_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: amon-configurations
+                  key: minio_public_url
+                  optional: true
             - name: MINIO_ACCESS_KEY_ID
               valueFrom:
                 configMapKeyRef:

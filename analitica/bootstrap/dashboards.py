@@ -5,6 +5,7 @@ Cada tablero es una lista de filas; cada fila, una lista de celdas:
   (clave_grafica, ancho, alto)                         -> gráfica definida en CHARTS
 Ancho en columnas de 12; alto en unidades de Superset (8 px).
 """
+from datasets import METAS_SLA
 
 MAPA_CLARO = "tile://https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"
 VISTA_CHIHUAHUA = {"longitude": -106.078, "latitude": 28.672, "zoom": 13.2, "bearing": 0, "pitch": 0}
@@ -25,6 +26,9 @@ LABEL_COLORS = {
     "Visión IA": "#0EA5C6", "911": "#FF4D5E", "Alarma": "#F5B544", "App ciudadana": "#7C5CFF",
     "Pendiente": "#F5B544", "Entregado": "#16A34A", "Devuelto": "#94A3B8",
     "Dentro": "#0EA5C6", "Salió": "#16A34A", "Preregistrada": "#7C5CFF", "Cancelada": "#94A3B8",
+    "Botón de pánico": "#B91C1C", "Alarma de intrusión": "#FF4D5E", "Alarma de incendio": "#F97316",
+    "Otras alarmas": "#F5B544", "Otros incidentes": "#CBD5E1",
+    "Cumple": "#16A34A", "No cumple": "#DC2626", "En curso": "#F5B544", "Sin registro": "#CBD5E1", "Sin meta": "#94A3B8",
 }
 
 
@@ -145,7 +149,8 @@ def mapa(lat="lat", lng="lng", color=(14, 165, 198), radius=60, dimension=None, 
     p = {"spatial": {"type": "latlong", "latCol": lat, "lonCol": lng}, "row_limit": 5000,
          "point_radius_fixed": {"type": "fix", "value": radius}, "point_unit": "square_m", "min_radius": 4,
          "max_radius": 30, "multiplier": 1, "mapbox_style": MAPA_CLARO, "viewport": VISTA_CHIHUAHUA,
-         "autozoom": False,  # 99 % de los datos está en Chihuahua; la cámara de Puebla queda al desplazar "color_picker": {"r": color[0], "g": color[1], "b": color[2], "a": 0.85},
+         "autozoom": False,  # 99 % de los datos está en Chihuahua; la cámara de Puebla queda al desplazar
+         "color_picker": {"r": color[0], "g": color[1], "b": color[2], "a": 0.85},
          "time_range": "No filter", "color_scheme": "cuboip"}
     if dimension:
         p["dimension"] = dimension
@@ -153,6 +158,16 @@ def mapa(lat="lat", lng="lng", color=(14, 165, 198), radius=60, dimension=None, 
         p["js_tooltip"] = ""
         p["tooltip_contents"] = tooltip
     return ("deck_scatter", p)
+
+
+def filtrado(chart, sql):
+    """Agrega a la gráfica un filtro fijo en SQL sobre las columnas del dataset."""
+    viz, p = chart
+    return (viz, {**p, "adhoc_filters": [{"expressionType": "SQL", "clause": "WHERE", "sqlExpression": sql}]})
+
+
+SOLO_ALARMAS = "familia <> 'Otros incidentes'"
+FUERA_DE_META = "'No cumple' IN (sla_aceptacion, sla_llegada, sla_cierre)"
 
 
 def metric_label(name):
@@ -209,8 +224,14 @@ CHARTS = {
     "in_situacion": ("cuboip_incidentes", "Situación", dona("folios", "situacion"), None),
     "in_top": ("cuboip_incidentes", "Incidencias más frecuentes", barras("folios", "incidencia", limit=10), None),
     "in_prio_estatus": ("cuboip_incidentes", "Estatus por prioridad", barras("folios", "estatus", ["prioridad"], horizontal=False), None),
-    "in_corp": ("cuboip_incidentes", "Tiempos por corporación",
-                tabla(["corporacion"], ["folios", "prom_aceptacion", "prom_llegada", "prom_cierre", "tasa_cierre"], order="folios"), None),
+    "in_corp": ("cuboip_despacho_corporacion", "Tiempos por corporación",
+                tabla(["corporacion"], ["folios", "prom_aceptacion", "prom_llegada", "prom_cierre", "cumple_llegada"], order="folios"),
+                "Un folio atendido por varias corporaciones cuenta en cada una."),
+    "in_alarma_serie": ("cuboip_incidentes", "Alarmas y botones de pánico por día",
+                        filtrado(serie(["folios"], "fecha", ["familia"]), SOLO_ALARMAS), None),
+    "in_alarma_tabla": ("cuboip_incidentes", "Alarmas y botones por incidencia",
+                        filtrado(tabla(["familia", "incidencia"], ["folios", "prom_aceptacion", "prom_llegada"], order="folios"),
+                                 SOLO_ALARMAS), None),
     "in_tiempos": ("cuboip_incidentes", "Evolución de tiempos de atención",
                    serie(["prom_aceptacion", "prom_llegada", "prom_cierre"], "fecha", kind="line", stack=False, fmt=",.1f"), None),
     "in_calor": ("cuboip_incidentes", "Mapa de calor: día y hora", calor("folios", "hora", "dia_semana", "cuboip_alarma"), None),
@@ -218,8 +239,30 @@ CHARTS = {
     "in_zona": ("cuboip_incidentes", "Folios por zona y colonia", arbol("folios", ["zona", "colonia"]), None),
     "in_flujo": ("cuboip_incidentes", "Flujo: origen → situación", sankey("folios", "origen", "situacion"), None),
     "in_ultimos": ("cuboip_incidentes", "Últimos folios",
-                   detalle(["folio", "fecha", "incidencia", "origen", "prioridad", "estatus", "corporacion", "min_llegada", "min_cierre"], "fecha",
+                   detalle(["folio", "fecha", "incidencia", "origen", "prioridad", "estatus", "corporaciones", "min_llegada", "min_cierre"], "fecha",
                            formats={"min_llegada": ",.1f", "min_cierre": ",.1f", "folio": "d"}), None),
+
+    # --- SLA por corporación
+    "sla_acep": ("cuboip_despacho_corporacion", "Aceptación", kpi("cumple_aceptacion", "dentro de la meta", ".0%"), None),
+    "sla_lleg": ("cuboip_despacho_corporacion", "Llegada", kpi("cumple_llegada", "dentro de la meta", ".0%"), None),
+    "sla_cierre": ("cuboip_despacho_corporacion", "Cierre", kpi("cumple_cierre", "dentro de la meta", ".0%"), None),
+    "sla_fuera": ("cuboip_despacho_corporacion", "Tarde al sitio", kpi("fuera_llegada", "llegadas fuera de meta"), None),
+    "sla_corp_tabla": ("cuboip_despacho_corporacion", "Cumplimiento por corporación",
+                       tabla(["corporacion"], ["despachos", "cumple_aceptacion", "cumple_llegada", "cumple_cierre", "p90_llegada"],
+                             order="despachos"), None),
+    "sla_corp_lleg": ("cuboip_despacho_corporacion", "Llegada contra meta por corporación",
+                      barras("despachos", "corporacion", ["sla_llegada"]), None),
+    "sla_prio_lleg": ("cuboip_despacho_corporacion", "Llegada contra meta por prioridad",
+                      barras("despachos", "prioridad", ["sla_llegada"], horizontal=False), None),
+    "sla_tendencia": ("cuboip_despacho_corporacion", "Cumplimiento por día",
+                      serie(["cumple_aceptacion", "cumple_llegada", "cumple_cierre"], "fecha", kind="line", stack=False, fmt=".0%"), None),
+    "sla_familia": ("cuboip_despacho_corporacion", "Cumplimiento en alarmas y botones",
+                    filtrado(tabla(["familia", "corporacion"], ["despachos", "cumple_llegada", "prom_llegada"], order="despachos"), SOLO_ALARMAS), None),
+    "sla_fuera_lista": ("cuboip_despacho_corporacion", "Atenciones fuera de meta",
+                        filtrado(detalle(["folio", "fecha", "corporacion", "incidencia", "prioridad", "min_aceptacion", "min_llegada",
+                                          "min_cierre", "sla_aceptacion", "sla_llegada", "sla_cierre"], "fecha",
+                                         formats={"folio": "d", "min_aceptacion": ",.1f", "min_llegada": ",.1f", "min_cierre": ",.1f"}),
+                                 FUERA_DE_META), "Folio y corporación con al menos un tramo fuera de la meta."),
 
     # --- Cámaras
     "cam_total": ("cuboip_camaras", "Cámaras", kpi("camaras", "en inventario"), None),
@@ -229,7 +272,7 @@ CHARTS = {
     "cam_ia": ("cuboip_camaras", "Cobertura de IA", kpi("con_analitica", "con analítica activa", ".0%"), None),
     "cam_estado": ("cuboip_camaras", "Estado del video", dona("camaras", "estado_video"), None),
     "cam_corp": ("cuboip_camaras", "Cámaras por corporación y estado", barras("camaras", "corporacion", ["estado_video"]), None),
-    "cam_mapa": ("cuboip_camaras", "Mapa de cámaras", mapa(color=(22, 163, 74), radius=18), None),
+    "cam_mapa": ("cuboip_camaras", "Mapa de cámaras", mapa(color=(22, 163, 74), radius=18, dimension="estado_video"), None),
     "cam_marca": ("cuboip_camaras", "Marcas y modelos", arbol("camaras", ["marca", "modelo"]), None),
     "cam_detalle": ("cuboip_camaras", "Inventario y salud por cámara",
                     detalle(["camara", "corporacion", "estado_video", "horas_en_estado", "analiticas_activas", "alertas_7d",
@@ -307,6 +350,13 @@ def _md(titulo, texto=""):
     return f"### {titulo}\n{texto}" if texto else f"### {titulo}"
 
 
+def _metas_md():
+    filas = "\n".join(f"| {p} | {a} | {l} | {c} |" for p, (a, l, c) in METAS_SLA.items())
+    return ("### Metas de atención (provisionales)\n"
+            "Minutos desde que se crea el folio. Cada corporación despachada se evalúa por separado.\n\n"
+            "| Prioridad | Aceptación | Llegada | Cierre |\n|---|---|---|---|\n" + filas)
+
+
 DASHBOARDS = [
     {
         "slug": "resumen-ejecutivo",
@@ -347,8 +397,8 @@ DASHBOARDS = [
         "slug": "incidentes",
         "title": "Incidentes y despacho",
         "description": "Folios del centro de mando: origen, estatus, tiempos de atención y ubicación.",
-        "filters": [("time", "Periodo", "Last month"), ("select", "Corporación", "corporacion", "cuboip_incidentes"),
-                    ("select", "Origen", "origen", "cuboip_incidentes"), ("select", "Prioridad", "prioridad", "cuboip_incidentes"),
+        "filters": [("time", "Periodo", "Last month"), ("select", "Origen", "origen", "cuboip_incidentes"),
+                    ("select", "Prioridad", "prioridad", "cuboip_incidentes"), ("select", "Familia", "familia", "cuboip_incidentes"),
                     ("select", "Incidencia", "incidencia", "cuboip_incidentes")],
         "rows": [
             [("in_total", 2, 30), ("in_abiertos", 2, 30), ("in_cierre", 2, 30), ("in_acept", 2, 30), ("in_llegada", 2, 30), ("in_5min", 2, 30)],
@@ -357,8 +407,26 @@ DASHBOARDS = [
             [("in_prio_estatus", 6, 50), ("in_flujo", 6, 50)],
             [("md", 12, 10, _md("Tiempos de atención", "Minutos desde la creación del folio hasta aceptación, llegada al sitio y cierre. Se descartan valores atípicos (más de 24 h)."))],
             [("in_tiempos", 7, 50), ("in_corp", 5, 50)],
+            [("md", 12, 10, _md("Alarmas y botones de pánico", "Incidencias agrupadas por familia según su nombre; incluye las alarmas que entran por el 911."))],
+            [("in_alarma_serie", 7, 50), ("in_alarma_tabla", 5, 50)],
             [("in_calor", 6, 50), ("in_zona", 6, 50)],
             [("in_ultimos", 12, 60)],
+        ],
+    },
+    {
+        "slug": "sla-corporaciones",
+        "title": "SLA de despacho por corporación",
+        "description": "Cumplimiento de las metas de aceptación, llegada y cierre de cada corporación despachada.",
+        "filters": [("time", "Periodo", "Last month"), ("select", "Corporación", "corporacion", "cuboip_despacho_corporacion"),
+                    ("select", "Prioridad", "prioridad", "cuboip_despacho_corporacion"),
+                    ("select", "Familia", "familia", "cuboip_despacho_corporacion"),
+                    ("select", "Incidencia", "incidencia", "cuboip_despacho_corporacion")],
+        "rows": [
+            [("sla_acep", 3, 26), ("sla_lleg", 3, 26), ("sla_cierre", 3, 26), ("sla_fuera", 3, 26)],
+            [("md", 4, 40, _metas_md()), ("sla_corp_tabla", 8, 40)],
+            [("sla_corp_lleg", 6, 50), ("sla_prio_lleg", 6, 50)],
+            [("sla_tendencia", 7, 50), ("sla_familia", 5, 50)],
+            [("sla_fuera_lista", 12, 60)],
         ],
     },
     {

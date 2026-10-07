@@ -5,7 +5,7 @@ from playwright.sync_api import sync_playwright
 path, out = sys.argv[1], sys.argv[2]
 dark = len(sys.argv) > 3 and sys.argv[3] == "dark"
 w, h = (int(x) for x in (sys.argv[4] if len(sys.argv) > 4 else "1440x900").split("x"))
-base = os.environ.get("BASE", "https://nginx")
+base = os.environ.get("BASE", "https://nginx" + os.environ.get("SUPERSET_APP_ROOT", "").rstrip("/"))
 with sync_playwright() as p:
     b = p.chromium.launch()
     ctx = b.new_context(viewport={"width": w, "height": h}, color_scheme="dark" if dark else "light",

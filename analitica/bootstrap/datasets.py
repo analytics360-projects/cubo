@@ -30,6 +30,58 @@ def _dia_semana(col):
 
 _CORP = "coalesce(nullif(co.alias, ''), co.nombre, 'Sin corporación')"
 
+# Metas de SLA en minutos desde la creación del folio, por prioridad.
+# PROVISIONALES (2026-09-30): el cliente aún no define las suyas; cambiar aquí y reaprovisionar.
+METAS_SLA = {
+    #           aceptación, llegada, cierre
+    "Urgente": (2, 10, 60),
+    "Alta": (3, 15, 90),
+    "Media": (5, 30, 180),
+    "Baja": (10, 60, 480),
+}
+_METAS_VALUES = ", ".join(f"('{p}', {a}, {l}, {c})" for p, (a, l, c) in METAS_SLA.items())
+
+
+def _familia(inc, origen):
+    """Agrupa las incidencias de alarmas y botones de pánico por nombre, para que los nombres
+    nuevos del catálogo (p. ej. "Alarma pánico audible") caigan solos en su grupo."""
+    return f"""CASE WHEN {inc} ~* '(bot[oó]n|p[aá]nico)' THEN 'Botón de pánico'
+            WHEN {inc} ~* 'alarma' AND {inc} ~* '(incendio|fuego|humo)' THEN 'Alarma de incendio'
+            WHEN {inc} ~* 'alarma' AND {inc} ~* '(intrusi[oó]n|robo|perimetral)' THEN 'Alarma de intrusión'
+            WHEN {inc} ~* 'alarma' OR upper({origen}) = 'ALARMA' THEN 'Otras alarmas'
+            ELSE 'Otros incidentes' END"""
+
+
+_ORIGEN = """CASE upper(e.origen) WHEN 'VISION' THEN 'Visión IA' WHEN '911' THEN '911' WHEN 'ALARMA' THEN 'Alarma'
+            WHEN 'APP_CIUDADANA' THEN 'App ciudadana' WHEN 'MONITOREO' THEN 'Monitoreo'
+            WHEN 'HIKVISION' THEN 'Control de acceso' WHEN 'MESA' THEN 'Mesa' WHEN 'TABLETA' THEN 'Tableta'
+            ELSE initcap(coalesce(e.origen, 'Sin origen')) END"""
+
+_PRIORIDAD_CAD = """CASE upper(e.prioridad) WHEN 'URGENTE' THEN 'Urgente' WHEN 'ALTA' THEN 'Alta'
+            WHEN 'MEDIA' THEN 'Media' WHEN 'BAJA' THEN 'Baja' ELSE 'Sin prioridad' END"""
+
+# Folios reales del CAD (sin simulaciones ni pruebas del backend).
+_EVENTOS_REALES = """e.active AND NOT coalesce(e.simulacion, false)
+   AND coalesce(upper(e.origen), '') NOT IN ('BACKEND', 'SIMULACION')"""
+
+
+def _sla(minutos, meta):
+    """Cumplimiento de un tramo: si ya ocurrió se compara contra la meta; si no ocurrió y la
+    atención sigue abierta, está 'En curso' hasta que se pasa de la meta."""
+    return f"""CASE WHEN {meta} IS NULL THEN 'Sin meta'
+            WHEN {minutos} IS NOT NULL THEN CASE WHEN {minutos} <= {meta} THEN 'Cumple' ELSE 'No cumple' END
+            WHEN abierto AND transcurrido > {meta} THEN 'No cumple'
+            WHEN abierto THEN 'En curso'
+            ELSE 'Sin registro' END"""
+
+
+def _cumplimiento(tramo):
+    return {"name": f"cumple_{tramo}", "label": f"Cumplimiento {tramo.replace('aceptacion', 'aceptación')} (%)",
+            "sql": f"COUNT(*) FILTER (WHERE sla_{tramo} = 'Cumple')::float"
+                   f" / NULLIF(COUNT(*) FILTER (WHERE sla_{tramo} IN ('Cumple', 'No cumple')), 0)",
+            "format": ".0%", "description": "Sobre las atenciones ya evaluables; no cuenta las que siguen en curso ni las sin registro."}
+
+
 _PRIORIDAD_IA = """CASE a.priority WHEN 'critica' THEN 'Crítica' WHEN 'alta' THEN 'Alta'
        WHEN 'media' THEN 'Media' WHEN 'baja' THEN 'Baja' ELSE initcap(a.priority) END"""
 
@@ -143,17 +195,14 @@ SELECT e.id AS folio,
        """ + _dia_semana("e.created_at") + """ AS dia_semana,
        coalesce(nullif(e.incidencia, ''), 'Sin clasificar') AS incidencia,
        coalesce(nullif(i.tipo, ''), 'Sin tipo') AS tipo_incidencia,
-       CASE upper(e.origen) WHEN 'VISION' THEN 'Visión IA' WHEN '911' THEN '911' WHEN 'ALARMA' THEN 'Alarma'
-            WHEN 'APP_CIUDADANA' THEN 'App ciudadana' WHEN 'MONITOREO' THEN 'Monitoreo'
-            WHEN 'HIKVISION' THEN 'Control de acceso' WHEN 'MESA' THEN 'Mesa' WHEN 'TABLETA' THEN 'Tableta'
-            ELSE initcap(coalesce(e.origen, 'Sin origen')) END AS origen,
-       CASE upper(e.prioridad) WHEN 'URGENTE' THEN 'Urgente' WHEN 'ALTA' THEN 'Alta'
-            WHEN 'MEDIA' THEN 'Media' WHEN 'BAJA' THEN 'Baja' ELSE 'Sin prioridad' END AS prioridad,
+       """ + _familia("e.incidencia", "e.origen") + """ AS familia,
+       """ + _ORIGEN + """ AS origen,
+       """ + _PRIORIDAD_CAD + """ AS prioridad,
        coalesce(e.estatus, 'Sin estatus') AS estatus,
        CASE WHEN e.estatus = 'Terminado' THEN 'Cerrado'
             WHEN e.estatus IN ('Improcedente', 'Omitido', 'Cancelado') THEN 'Descartado'
             ELSE 'Abierto' END AS situacion,
-       """ + _CORP + """ AS corporacion,
+       coalesce(dc.corporaciones, 'Sin despacho') AS corporaciones,
        coalesce(nullif(e.zona_zombre, ''), 'Sin zona') AS zona,
        coalesce(nullif(e.municipio, ''), 'Sin municipio') AS municipio,
        coalesce(nullif(e.colonia, ''), 'Sin colonia') AS colonia,
@@ -169,16 +218,21 @@ SELECT e.id AS folio,
        CASE WHEN e.fecha_terminado > '2000-01-01' AND e.fecha_terminado >= e.created_at
             THEN extract(epoch from e.fecha_terminado - e.created_at) / 60.0 END AS min_cierre
   FROM public.eventos e
-  LEFT JOIN public.corporacion co ON co.id = e.corporacion_id
   LEFT JOIN LATERAL (SELECT tipo FROM public.incidencias ii
                       WHERE ii.incidencia = e.incidencia AND ii.active LIMIT 1) i ON true
- WHERE e.active AND NOT coalesce(e.simulacion, false)
-   AND coalesce(upper(e.origen), '') NOT IN ('BACKEND', 'SIMULACION')""",
+  -- eventos.corporacion_id queda en 0: un folio puede despacharse a varias corporaciones y
+  -- cada una lleva su propio seguimiento en eventos_historial (ver cuboip_despacho_corporacion).
+  LEFT JOIN LATERAL (SELECT string_agg(DISTINCT """ + _CORP + """, ', ') AS corporaciones
+                       FROM public.eventos_historial h JOIN public.corporacion co ON co.id = h.corporacion_id
+                      WHERE h.folio = e.id AND h.corporacion_id <> 0) dc ON true
+ WHERE """ + _EVENTOS_REALES,
         "columns": {
             "folio": {"label": "Folio"}, "fecha": {"label": "Fecha"}, "hora": {"label": "Hora del día"},
             "dia_semana": {"label": "Día"}, "incidencia": {"label": "Incidencia"}, "tipo_incidencia": {"label": "Tipo"},
             "origen": {"label": "Origen"}, "prioridad": {"label": "Prioridad"}, "estatus": {"label": "Estatus"},
-            "situacion": {"label": "Situación"}, "corporacion": {"label": "Corporación"}, "zona": {"label": "Zona"},
+            "situacion": {"label": "Situación"}, "zona": {"label": "Zona"},
+            "familia": {"label": "Familia", "description": "Agrupa alarmas y botones de pánico; el resto queda en 'Otros incidentes'."},
+            "corporaciones": {"label": "Corporaciones despachadas"},
             "municipio": {"label": "Municipio"}, "colonia": {"label": "Colonia"}, "motivo_cierre": {"label": "Motivo de cierre"},
             "min_aceptacion": {"label": "Min. a aceptación"}, "min_llegada": {"label": "Min. a llegada"},
             "min_cierre": {"label": "Min. a cierre"},
@@ -195,6 +249,81 @@ SELECT e.id AS folio,
             {"name": "llegada_5min", "label": "Llegada en < 5 min (%)",
              "sql": "COUNT(*) FILTER (WHERE min_llegada < 5)::float / NULLIF(COUNT(*) FILTER (WHERE min_llegada IS NOT NULL), 0)", "format": ".0%"},
             {"name": "urgentes", "label": "Urgentes y altas", "sql": "COUNT(*) FILTER (WHERE prioridad IN ('Urgente','Alta'))", "format": ",d"},
+        ],
+    },
+    # ------------------------------------------------------------------ Despacho por corporación y SLA
+    {
+        "name": "cuboip_despacho_corporacion",
+        "description": ("Una fila por folio y corporación despachada (public.eventos_historial), con tiempos de "
+                        "cada corporación y cumplimiento de SLA por prioridad. Un folio con varias "
+                        "corporaciones aparece una vez por cada una."),
+        "time_column": "fecha",
+        "sql": """
+SELECT b.*,
+       """ + _sla("min_aceptacion", "meta_aceptacion") + """ AS sla_aceptacion,
+       """ + _sla("min_llegada", "meta_llegada") + """ AS sla_llegada,
+       """ + _sla("min_cierre", "meta_cierre") + """ AS sla_cierre
+  FROM (
+SELECT e.id AS folio,
+       e.created_at AS fecha,
+       to_char(e.created_at, 'HH24') AS hora,
+       """ + _dia_semana("e.created_at") + """ AS dia_semana,
+       coalesce(nullif(e.incidencia, ''), 'Sin clasificar') AS incidencia,
+       """ + _familia("e.incidencia", "e.origen") + """ AS familia,
+       """ + _ORIGEN + """ AS origen,
+       """ + _PRIORIDAD_CAD + """ AS prioridad,
+       """ + _CORP + """ AS corporacion,
+       d.estatus,
+       CASE WHEN d.estatus = 'Terminado' THEN 'Cerrado'
+            WHEN d.estatus IN ('Improcedente', 'Omitido', 'Cancelado') THEN 'Descartado'
+            ELSE 'Abierto' END AS situacion,
+       (d.estatus NOT IN ('Terminado', 'Improcedente', 'Omitido', 'Cancelado')
+        AND coalesce(e.estatus, '') NOT IN ('Terminado', 'Improcedente', 'Omitido', 'Cancelado')) AS abierto,
+       extract(epoch from (now() AT TIME ZONE '""" + TZ + """') - e.created_at) / 60.0 AS transcurrido,
+       CASE WHEN d.t_acep >= e.created_at THEN extract(epoch from d.t_acep - e.created_at) / 60.0 END AS min_aceptacion,
+       CASE WHEN d.t_sitio >= e.created_at THEN extract(epoch from d.t_sitio - e.created_at) / 60.0 END AS min_llegada,
+       CASE WHEN d.t_fin >= e.created_at THEN extract(epoch from d.t_fin - e.created_at) / 60.0 END AS min_cierre,
+       m.aceptacion AS meta_aceptacion, m.llegada AS meta_llegada, m.cierre AS meta_cierre
+  FROM public.eventos e
+  JOIN LATERAL (SELECT h.corporacion_id,
+                       min(h.created_at) FILTER (WHERE h.etapa_despacho = 'Aceptada') AS t_acep,
+                       min(h.created_at) FILTER (WHERE h.etapa_despacho = 'En Sitio') AS t_sitio,
+                       min(h.created_at) FILTER (WHERE h.estatus = 'Terminado') AS t_fin,
+                       (array_agg(h.estatus ORDER BY h.id DESC))[1] AS estatus
+                  FROM public.eventos_historial h
+                 WHERE h.folio = e.id AND h.corporacion_id <> 0 AND coalesce(h.active, true)
+                 GROUP BY h.corporacion_id) d ON true
+  JOIN public.corporacion co ON co.id = d.corporacion_id
+  LEFT JOIN (VALUES """ + _METAS_VALUES + """) m(prioridad, aceptacion, llegada, cierre)
+         ON m.prioridad = """ + _PRIORIDAD_CAD + """
+ WHERE """ + _EVENTOS_REALES + """
+{% if from_dttm %} AND e.created_at >= '{{ from_dttm }}'{% endif %}{% if to_dttm %} AND e.created_at < '{{ to_dttm }}'{% endif %}
+) b""",
+        "columns": {
+            "folio": {"label": "Folio"}, "fecha": {"label": "Fecha"}, "hora": {"label": "Hora del día"},
+            "dia_semana": {"label": "Día"}, "incidencia": {"label": "Incidencia"}, "familia": {"label": "Familia"},
+            "origen": {"label": "Origen"}, "prioridad": {"label": "Prioridad"}, "corporacion": {"label": "Corporación"},
+            "estatus": {"label": "Estatus de la corporación"}, "situacion": {"label": "Situación"},
+            "abierto": {"label": "Atención abierta"}, "transcurrido": {"label": "Min. transcurridos"},
+            "min_aceptacion": {"label": "Min. a aceptación"}, "min_llegada": {"label": "Min. a llegada"},
+            "min_cierre": {"label": "Min. a cierre"},
+            "meta_aceptacion": {"label": "Meta aceptación (min)"}, "meta_llegada": {"label": "Meta llegada (min)"},
+            "meta_cierre": {"label": "Meta cierre (min)"},
+            "sla_aceptacion": {"label": "SLA aceptación"}, "sla_llegada": {"label": "SLA llegada"},
+            "sla_cierre": {"label": "SLA cierre"},
+        },
+        "metrics": [
+            {"name": "despachos", "label": "Despachos", "sql": "COUNT(*)", "format": ",d",
+             "description": "Atenciones folio × corporación."},
+            {"name": "folios", "label": "Folios", "sql": "COUNT(DISTINCT folio)", "format": ",d"},
+            _cumplimiento("aceptacion"), _cumplimiento("llegada"), _cumplimiento("cierre"),
+            {"name": "fuera_llegada", "label": "Llegadas fuera de meta", "sql": "COUNT(*) FILTER (WHERE sla_llegada = 'No cumple')", "format": ",d"},
+            {"name": "prom_aceptacion", "label": "Prom. a aceptación (min)", "sql": "AVG(min_aceptacion) FILTER (WHERE min_aceptacion < 1440)", "format": ",.1f"},
+            {"name": "prom_llegada", "label": "Prom. a llegada (min)", "sql": "AVG(min_llegada) FILTER (WHERE min_llegada < 1440)", "format": ",.1f"},
+            {"name": "prom_cierre", "label": "Prom. a cierre (min)", "sql": "AVG(min_cierre) FILTER (WHERE min_cierre < 2880)", "format": ",.1f"},
+            {"name": "p90_llegada", "label": "Llegada P90 (min)",
+             "sql": "percentile_cont(0.9) WITHIN GROUP (ORDER BY min_llegada) FILTER (WHERE min_llegada < 1440)", "format": ",.1f",
+             "description": "9 de cada 10 llegadas ocurren en este tiempo o menos."},
         ],
     },
     # ------------------------------------------------------------------ Cámaras (inventario y salud)
