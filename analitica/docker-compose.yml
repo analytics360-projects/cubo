@@ -1,0 +1,104 @@
+# CuboIP Analítica (Apache Superset 6.1) - dev-superset-cuboip-01 / 10.19.5.243
+# Datos: base cuboip en 10.19.5.100 (rol superset_ro, solo lectura).
+name: cuboip-analitica
+
+x-superset: &superset
+  image: cuboip-superset:6.1.0
+  build:
+    context: ./docker
+  env_file: .env
+  restart: unless-stopped
+  volumes:
+    - ./docker/superset_config.py:/app/pythonpath/superset_config.py:ro
+    - ./docker/assets:/app/superset/static/assets/cuboip:ro
+    - ./bootstrap:/app/bootstrap:ro
+    - superset_home:/app/superset_home
+  depends_on:
+    metadb: { condition: service_healthy }
+    redis: { condition: service_healthy }
+
+services:
+  metadb:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${META_DB_NAME}
+      POSTGRES_USER: ${META_DB_USER}
+      POSTGRES_PASSWORD: ${META_DB_PASSWORD}
+    volumes:
+      - metadb:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${META_DB_USER} -d ${META_DB_NAME}"]
+      interval: 10s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "1gb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      retries: 10
+
+  superset-init:
+    <<: *superset
+    restart: "no"
+    command: ["/bin/sh", "-c", "superset db upgrade && superset fab create-admin --username \"$$ADMIN_USERNAME\" --firstname Admin --lastname CuboIP --email \"$$ADMIN_EMAIL\" --password \"$$ADMIN_PASSWORD\" || true; superset init"]
+
+  superset:
+    <<: *superset
+    command: ["/usr/bin/run-server.sh"]
+    environment:
+      SERVER_WORKER_AMOUNT: "4"
+      SERVER_THREADS_AMOUNT: "4"
+      GUNICORN_TIMEOUT: "120"
+    depends_on:
+      superset-init: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8088/health"]
+      interval: 20s
+      retries: 10
+      start_period: 60s
+
+  superset-worker:
+    <<: *superset
+    command: ["celery", "--app=superset.tasks.celery_app:app", "worker", "--pool=prefork", "-O", "fair", "-c", "4"]
+    healthcheck:
+      test: ["CMD-SHELL", "celery --app=superset.tasks.celery_app:app inspect ping -d celery@$$HOSTNAME -t 10 | grep -q pong"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      superset-init: { condition: service_completed_successfully }
+
+  superset-beat:
+    <<: *superset
+    command: ["celery", "--app=superset.tasks.celery_app:app", "beat", "--pidfile", "/tmp/celerybeat.pid", "--schedule", "/tmp/celerybeat-schedule"]
+    healthcheck:
+      disable: true
+    depends_on:
+      superset-init: { condition: service_completed_successfully }
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/fullchain.crt:/etc/nginx/tls/fullchain.crt:ro
+      - ./nginx/superset.key:/etc/nginx/tls/server.key:ro
+      - ./nginx/ca.crt:/usr/share/nginx/html/ca.crt:ro
+      - ./nginx/lang:/usr/share/nginx/lang:ro
+    depends_on:
+      superset: { condition: service_healthy }
+
+volumes:
+  metadb:
+  redis:
+  superset_home:
