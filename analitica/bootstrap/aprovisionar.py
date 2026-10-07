@@ -21,13 +21,17 @@ def _id(*parts):
     return hashlib.sha1("::".join(parts).encode()).hexdigest()[:10].upper()
 
 
-def native_filters(dash, ds_ids, chart_ids):
+def native_filters(dash, ds_ids, chart_ids, chart_cols):
+    """chart_cols: id de gráfica -> columnas de su dataset. Un filtro de columna solo alcanza a las
+    gráficas cuyo dataset tiene esa columna; en las demás Superset fallaría o filtraría de más."""
     out = []
     for f in dash["filters"]:
         fid = f"NATIVE_FILTER-{_id(dash['slug'], f[1])}"
+        scope = chart_ids if f[0] == "time" else [i for i in chart_ids if f[2] in chart_cols[i]]
         base = {
             "id": fid, "name": f[1], "type": "NATIVE_FILTER", "description": "", "cascadeParentIds": [],
-            "scope": {"rootPath": ["ROOT_ID"], "excluded": []}, "chartsInScope": chart_ids, "tabsInScope": [],
+            "scope": {"rootPath": ["ROOT_ID"], "excluded": [i for i in chart_ids if i not in scope]},
+            "chartsInScope": scope, "tabsInScope": [],
         }
         if f[0] == "time":
             base.update({
@@ -91,7 +95,7 @@ def main():
     })
     print(f"base de datos {DB_NAME}: {db_id}")
 
-    ds_ids = {}
+    ds_ids, ds_cols = {}, {}
     for ds in DATASETS:
         try:
             ds_ids[ds["name"]] = ss.upsert_dataset(db_id, ds)
@@ -102,6 +106,7 @@ def main():
                 raise
             print(f"  dataset {ds['name']}: OMITIDO (falta el esquema {ds.get('schema')}): {str(e)[:160]}")
             continue
+        ds_cols[ds["name"]] = {c["column_name"] for c in ss.get(f"dataset/{ds_ids[ds['name']]}")["result"]["columns"]}
         print(f"  dataset {ds['name']}: {ds_ids[ds['name']]}")
 
     existing = ss.managed_charts()
@@ -113,10 +118,12 @@ def main():
         chart_ids[key] = ss.upsert_chart(key, title, viz, ds_ids[ds_name], params, desc, existing)
         chart_names[key] = title
     for key, chart_id in existing.items():
-        if key not in CHARTS:
+        # Solo retira las gráficas de este aprovisionamiento; las hechas a mano no tienen clave.
+        if key not in CHARTS and not key.startswith("_sin_clave_"):
             ss._req("DELETE", f"chart/{chart_id}")
             print(f"  gráfica retirada: {key}")
     print(f"  {len(chart_ids)} gráficas")
+    chart_cols = {chart_ids[k]: ds_cols[ds_name] for k, (ds_name, *_) in CHARTS.items()}
 
     tableros = []
     for dash in DASHBOARDS:
@@ -133,7 +140,7 @@ def main():
             "refresh_frequency": 600,
             "timed_refresh_immune_slices": [],
             "cross_filters_enabled": True,
-            "native_filter_configuration": native_filters(dash, ds_ids, ids),
+            "native_filter_configuration": native_filters(dash, ds_ids, ids, chart_cols),
             "chart_configuration": {
                 str(i): {"id": i, "crossFilters": {"scope": "global", "chartsInScope": [x for x in ids if x != i]}}
                 for i in ids

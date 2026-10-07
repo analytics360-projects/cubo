@@ -58,7 +58,7 @@ services:
     depends_on:
       superset-init: { condition: service_completed_successfully }
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8088/health"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8088$${SUPERSET_APP_ROOT:-}/health"]
       interval: 20s
       retries: 10
       start_period: 60s

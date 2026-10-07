@@ -12,6 +12,10 @@ from celery.schedules import crontab
 
 env = os.environ.get
 
+# Subruta pública (p. ej. "/analitica" detrás de cubo.servicios360.com.mx). Superset la lee de
+# SUPERSET_APP_ROOT; aquí se usa para las rutas propias de la marca. Vacío = raíz.
+_ROOT = env("SUPERSET_APP_ROOT", "").rstrip("/")
+
 # ---------------------------------------------------------------------------
 # Básico
 # ---------------------------------------------------------------------------
@@ -28,7 +32,7 @@ SQLLAB_TIMEOUT = 60
 SQLLAB_ASYNC_TIME_LIMIT_SEC = 300
 ENABLE_PROXY_FIX = True
 PREFERRED_URL_SCHEME = "https"
-WEBDRIVER_BASEURL = "http://superset:8088/"
+WEBDRIVER_BASEURL = f"http://superset:8088{_ROOT}/"
 WEBDRIVER_BASEURL_USER_FRIENDLY = env("SUPERSET_PUBLIC_URL", "https://10.19.5.243/")
 SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_SAMESITE = "Lax"
@@ -78,6 +82,9 @@ DEFAULT_TIMEZONE = "America/Mexico_City"
 # Marca CuboIP (tokens tomados de horus/src/tailwind.css)
 # ---------------------------------------------------------------------------
 APP_NAME = "CuboIP Analítica"
+# Superset antepone la subruta por su cuenta a APP_ICON, LOGO_TARGET_PATH, brandLogoUrl, brandLogoHref
+# y los favicons: van sin _ROOT (al logo se la pone dos veces; nginx/default.conf lo corrige).
+# brandSpinnerUrl se usa tal cual: lleva _ROOT.
 APP_ICON = "/static/assets/cuboip/logo-cuboip-light.svg"
 LOGO_TARGET_PATH = "/superset/welcome/"
 LOGO_TOOLTIP = "CuboIP Analítica"
@@ -97,7 +104,7 @@ _TOKENS_COMUNES = {
     "brandLogoHeight": "28px",
     "brandLogoMargin": "12px 0",
     "brandIconMaxWidth": 200,
-    "brandSpinnerUrl": "/static/assets/cuboip/spinner-cuboip.svg",
+    "brandSpinnerUrl": f"{_ROOT}/static/assets/cuboip/spinner-cuboip.svg",
     "fontFamily": _FONT_SANS,
     "fontFamilyCode": _FONT_MONO,
     "fontSize": 13,

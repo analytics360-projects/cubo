@@ -5,14 +5,14 @@
 :root {
   --cuboip-brand: #5F7D2A;
   --cuboip-accent: #0E7490;
-  --cuboip-hero: url("/static/assets/cuboip/login-hero-light.svg");
+  --cuboip-hero: url("login-hero-light.svg");
   --cuboip-hero-bg: #FFFFFF;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --cuboip-brand: #B9D03C;
     --cuboip-accent: #22D3EE;
-    --cuboip-hero: url("/static/assets/cuboip/login-hero-dark.svg");
+    --cuboip-hero: url("login-hero-dark.svg");
     --cuboip-hero-bg: #0C1016;
   }
 }

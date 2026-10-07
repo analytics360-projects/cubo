@@ -10,7 +10,7 @@ import requests
 import urllib3
 
 # Por nginx: la cookie de sesión es Secure y el CSRF exige HTTPS con Referer del mismo origen.
-BASE = os.environ.get("SUPERSET_URL", "https://nginx")
+BASE = os.environ.get("SUPERSET_URL", "https://nginx" + os.environ.get("SUPERSET_APP_ROOT", "").rstrip("/"))
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
