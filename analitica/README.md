@@ -63,7 +63,6 @@ quitarlos.
 
 El predictivo y la clasificación viven en horus (*Reportes > Riesgo por zona* y el panel del folio), no en Superset. Los datasets `cuboip_riesgo`, `cuboip_alertas_preventivas` y `cuboip_clasificacion` quedan en la base sin tablero.
 
-<!-- seccion anterior: -->
 
 Datasets `cuboip_riesgo` (`shai.v_riesgo`), `cuboip_alertas_preventivas` (`shai.alertas`) y
 `cuboip_clasificacion` (`shai.v_valores`) del módulo shai (rama `feat/predictivo-clasificacion` de
