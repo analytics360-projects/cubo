@@ -85,8 +85,14 @@ def main():
 
     db_id = ss.upsert_database(DB_NAME, os.environ["CUBOIP_DB_URI"], {
         "metadata_params": {},
+        # 180000 (antes 60000): coincide con el statement_timeout de superset_ro en
+        # superset_ro_extra.sql. Esta opción de conexión pisa el default del rol, así que
+        # hay que mantener ambos sincronizados. cuboip_detecciones_hora agrega vision.events
+        # completa (la tabla solo tiene ~24 días de historial) y en el .100 (1 GB RAM,
+        # compartido) el tiempo real varía mucho con la presión de caché: se midió entre 48s
+        # y más de 120s. 180s da margen; no se tocó work_mem/memoria del servidor compartido.
         "engine_params": {"connect_args": {"application_name": "cuboip-analitica",
-                                           "options": "-c statement_timeout=60000"}},
+                                           "options": "-c statement_timeout=180000"}},
         "metadata_cache_timeout": {"schema_cache_timeout": 3600, "table_cache_timeout": 3600},
         "schemas_allowed_for_file_upload": [],
         "cost_estimate_enabled": True,

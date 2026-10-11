@@ -165,17 +165,20 @@ SELECT a.id,
                        "El filtro de tiempo del tablero se aplica dentro de la consulta.",
         "time_column": "hora_ts",
         "cache_timeout": 1800,
+        # Lee el rollup vision.detecciones_hora (lo alimenta amon cada VISION_ROLLUP_MINUTES),
+        # no vision.events directo: aun con idx_events_ts, agregar ~4.7M filas en una ventana
+        # amplia excedía el statement_timeout de superset_ro bajo contención del host compartido
+        # (slices 129 y 131 intermitentes). hora_utc es timestamp sin zona truncado en UTC.
         "sql": f"""
-SELECT date_trunc('hour', e.ts AT TIME ZONE '{TZ}') AS hora_ts,
+SELECT (d.hora_utc AT TIME ZONE 'UTC' AT TIME ZONE '{TZ}') AS hora_ts,
        coalesce(c.name, 'Sin cámara') AS camara,
-       {_CLASES.format(c='e.type')} AS clase,
-       count(*) AS detecciones,
-       count(DISTINCT e.track_id) AS objetos_unicos,
-       avg(e.confidence) AS confianza_media
-  FROM vision.events e
-  LEFT JOIN vision.cameras c ON c.id = e.camera_id
- WHERE e.ts >= now() - interval '90 days'{_rango('e.ts')}
- GROUP BY 1, 2, 3""",
+       {_CLASES.format(c="nullif(d.type, '')")} AS clase,
+       d.detecciones,
+       d.objetos_unicos,
+       d.confianza_media
+  FROM vision.detecciones_hora d
+  LEFT JOIN vision.cameras c ON c.id = d.camera_id
+ WHERE d.hora_utc >= (now() AT TIME ZONE 'UTC') - interval '35 days'{_rango("(d.hora_utc AT TIME ZONE 'UTC')")}""",
         "columns": {"hora_ts": {"label": "Hora"}, "camara": {"label": "Cámara"}, "clase": {"label": "Clase"}},
         "metrics": [
             {"name": "detecciones", "label": "Detecciones", "sql": "SUM(detecciones)", "format": ",d"},

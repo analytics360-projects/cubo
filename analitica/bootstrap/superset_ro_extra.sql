@@ -3,7 +3,13 @@
 \set ON_ERROR_STOP on
 BEGIN;
 ALTER ROLE superset_ro CONNECTION LIMIT 20;  -- 4x4 hilos web + 4 del worker
-ALTER ROLE superset_ro SET statement_timeout = '60s';
+-- 180s (antes 60s): cuboip_detecciones_hora agrega ~4.7M filas de vision.events (la tabla solo
+-- tiene ~24 días de historial, así que acotar el rango del dataset no reduce el barrido). Con
+-- idx_events_ts (vision_schema.sql) el tiempo real varía mucho en el .100 (1 GB RAM, 25+ bases)
+-- según la presión de caché: se midió entre 48s y más de 120s. Debe coincidir con el
+-- statement_timeout=180000 de aprovisionar.py (la opción de conexión pisa este default del rol).
+-- No se tocó work_mem/memoria del servidor compartido.
+ALTER ROLE superset_ro SET statement_timeout = '180s';
 ALTER ROLE superset_ro SET search_path = vision, corp, public;
 GRANT USAGE ON SCHEMA vision, corp TO superset_ro;
 GRANT SELECT ON ALL TABLES IN SCHEMA vision, corp TO superset_ro;
