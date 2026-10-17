@@ -50,6 +50,9 @@ del ambiente y debe cambiarse al entrar. No se escribe en ningún documento.
 | `cuboip-ra-tracker` | — | Identidad global multicámara. |
 | `cuboip-ra-clip` (GPU) | **7120** | CLIP, ReID, rostros, placas. Publicado en la LAN para que un amon de desarrollo pueda enrolar rostros. |
 | `cuboip-ra-ai-worker` (GPU) | — | YOLO y analíticas. |
+| `cuboip-ra-hu` (GPU) | — | Transcripción (faster-whisper, `large-v3-turbo`); toma trabajos de amon por `api/hu/interno` firmado con `HU_SECRETO`. |
+| `cuboip-asterisk` | **5060/udp** (SIP), **10000-10050/udp** (RTP) | Conmutador de laboratorio (Asterisk 20 PJSIP + recordings-api con token; `amon/docs/pbx/asterisk-lab`). ARI 8088 y AMI 5038 solo internos; config y secretos en `config/asterisk`; grabaciones en `data/asterisk-monitor`. |
+| `cuboip-asterisk-cdr` | — | CDR y CEL del conmutador en MySQL (`asteriskcdrdb`, esquema de Issabel): es de donde el monitor de atención saca las llamadas. Asterisk escribe por ODBC; amon solo lee con `amon_ro`. Esquema en `config/asterisk-cdr`, datos en `data/asterisk-cdr`. |
 | `cuboip-ollama` (GPU) | — | Copiloto (imhotep), modelo `qwen2.5:7b`. No es el Ollama del host (11434). |
 | `cuboip-thot` | — (detrás del nginx de horus en `/thot/`) | Thot: señalización WebRTC del video del agente, página `/v/` e ingesta del video por SMS, difusión a varios espectadores y grabación. Código en `ra/thot`. |
 | `cuboip-coturn` | **7178** udp/tcp, relevo **7180-7199/udp** (red del host) | TURN/STUN con credenciales efímeras para el video del agente en segundo plano. |
@@ -139,7 +142,9 @@ variables: estas son conexiones y secretos de arranque.
 | `VISION_ENABLED`, `VISION_RTSP_BASE`, `VISION_MEDIA_URL`, `VISION_MEDIA_TOKEN`, `CLIP_URL`, `VISION_*` | Visión e IA (nekhbet) y servidor de medios de ra. `VISION_MEDIA_TOKEN` es secreto e igual a `RA_MEDIA_TOKEN`. |
 | `COPILOT_PROVIDER`, `OLLAMA_URL`, `COPILOT_MODEL`, `COPILOT_TIMEOUT_SECONDS`, `COPILOT_DEBATE`, `COPILOT_TIMEZONE` | Copiloto (imhotep): Ollama del compose, `qwen2.5:7b`. |
 | `CAMERAS_EXPOSE_CREDENTIALS` | `false`: el front nunca recibe credenciales de cámaras. |
-| `ARI_ENABLED` | Conmutador (sin PBX en el .244). |
+| `ARI_ENABLED` | Conmutador: `true` (el laboratorio tiene su propio Asterisk, `cuboip-asterisk`). |
+| `PBXCONNECTIONSTRING` | Base de CDR/CEL del conmutador (secreto, usuario `amon_ro` de solo lectura). Sin ella el monitor de atención responde `{disponible:false}` y la pantalla dice "Sin conmutador configurado": es configuración válida, no falla. |
+| `PBX_QUEUE` | Cola de atención que mide el monitor; por omisión `60911`. |
 | `OTEL_ENABLED` | Trazas OpenTelemetry. |
 | `THOT_URL` | Señalización interna de thot. |
 | `THOT_URL_EMISOR` | URL de la señalización que se entrega a la app del agente: `wss://cubo.servicios360.com.mx/thot/` (antes la IP privada, que los celulares fuera de la LAN no alcanzan). |
@@ -232,12 +237,12 @@ creados; puede repetirse. Un `restart` no basta: hay que recrear.
 |---|---|
 | `.env` | Secretos y conexiones. No copiar ni versionar. |
 | `docker-compose.yml`, `docker-bake.hcl` | Servicios e imágenes. |
-| `config/` | `go2rtc.yaml`, `horus-nginx.conf` (incluye `/thot/`), coturn, imagen de Ollama, BuildKit. |
+| `config/` | `go2rtc.yaml`, `horus-nginx.conf` (incluye `/thot/`), coturn, imagen de Ollama, BuildKit, `asterisk` (conmutador) y `asterisk-cdr` (esquema de la base de CDR). |
 | `tls/` | CA "CuboIP Desarrollo CA" y certificado del .244 (la llave de la CA no sale del servidor). |
 | `src/{amon,horus,ra}` | Código con el que se construyeron las imágenes. |
 | `parches/` | Commits que se aplican sobre development si aún no los trae. |
 | `data/dataprotection-keys` | Anillo de llaves de amon. **Respaldar.** |
-| `data/recordings`, `data/faces`, `data/minio`, `data/redis`, `data/models`, `data/ollama` | Datos y modelos. |
+| `data/recordings`, `data/faces`, `data/minio`, `data/redis`, `data/models`, `data/ollama`, `data/asterisk-monitor` (grabaciones del conmutador), `data/asterisk-cdr` (CDR/CEL) | Datos y modelos. |
 | `logs/` | Bitácoras de construcción. |
 
 ## Si algo falla
