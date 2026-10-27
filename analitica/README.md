@@ -28,7 +28,7 @@ Superset con la marca de CuboIP para tableros, reportes programados y alertas so
 
 ## Tableros
 
-`bootstrap/` crea o actualiza de forma idempotente la conexión, 18 datasets virtuales con métricas en español, 140 gráficas y 9 tableros con filtros nativos:
+`bootstrap/` crea o actualiza de forma idempotente la conexión, 19 datasets virtuales con métricas en español, 162 gráficas y 10 tableros con filtros nativos:
 
 1. Resumen ejecutivo
 2. Alertas de IA y analíticas de video
@@ -38,6 +38,27 @@ Superset con la marca de CuboIP para tableros, reportes programados y alertas so
 6. Control de acceso y corporativo
 7. Auditoría y uso de la plataforma
 8. Tiempos de servicio y cumplimiento (`/superset/dashboard/servicio/`)
+9. Riesgo por zona y clasificación (`/superset/dashboard/riesgo-zonas/`)
+
+### Riesgo por zona y clasificación
+
+Lee `shai.*`: el predictivo por celda y franja, las alertas preventivas y lo que el modelo de
+lenguaje saca de la narrativa.
+
+| Dataset | Vista | Para qué |
+|---|---|---|
+| `cuboip_riesgo` | `shai.v_riesgo` | Celda o sitio × día × franja de tres horas, con folios esperados y probabilidad. |
+| `cuboip_alertas_preventivas` | `shai.alertas` | Las que levantó el predictivo, con su nivel y qué se hizo con ellas. |
+| `cuboip_clasificacion` | `shai.v_valores` | Campos sacados de la narrativa, con su fuente y si una persona los revisó. |
+
+Filtros nativos: periodo, capa, zona, sitio, cliente, día y franja.
+
+Dos lecturas que conviene explicar al enseñarlo:
+
+- **"Terminaron en folio"** es la medida honesta de si las preventivas sirven. Sale vacía mientras
+  el predictivo no haya levantado ninguna, que es el estado normal en un ambiente de pruebas.
+- **"Precisión del modelo"** solo cuenta lo que un operador revisó. Sin revisiones no hay precisión
+  que medir, y el tablero lo dice en vez de inventar un número.
 
 ### Tiempos de servicio y cumplimiento
 
